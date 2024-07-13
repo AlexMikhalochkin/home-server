@@ -10,7 +10,7 @@ on:
       - reopened
       - synchronize
 jobs:
-  test:
+  review-code:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LANGUAGE: English
           OPENAI_API_ENDPOINT: https://api.openai.com/v1
-          MODEL: gpt-4
+          MODEL: gpt-3
           PROMPT: Please check if there are any confusions or irregularities in the following code diff
           top_p: 1
           temperature: 1
