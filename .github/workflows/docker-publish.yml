@@ -11,7 +11,6 @@ jobs:
     permissions:
       packages: write
       contents: read
-      attestations: write
       id-token: write
     steps:
       - name: Check out the repo
@@ -38,10 +37,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: index.docker.io/alexmikhalochkin/do-firewall-updater
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
