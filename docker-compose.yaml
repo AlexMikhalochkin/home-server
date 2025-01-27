@@ -1,6 +1,17 @@
 version: "3.7"
 
 services:
+  momomo:
+    image: alexmikhalochkin/momomo-worker:main
+    container_name: momomo
+    environment:
+      - TZ=Europe/Berlin
+    #      - MQTT_MOSQUITTO_SERVER_URL=tcp://mosquitto:1883
+    volumes:
+      - ./momomo:/config
+    command: --spring.config.location=/config/
+    restart: unless-stopped
+
   mosquitto:
     image: eclipse-mosquitto
     hostname: mosquitto
@@ -46,13 +57,3 @@ services:
       - /dev/ttyUSB0:/dev/ttyUSB0
     restart: unless-stopped
 
-  momomo:
-    image: alexmikhalochkin/momomo-worker:main
-    container_name: momomo
-    environment:
-      - TZ=Europe/Berlin
-    #      - MQTT_MOSQUITTO_SERVER_URL=tcp://mosquitto:1883
-    volumes:
-      - ./momomo:/config
-    command: --spring.config.location=/config/
-    restart: unless-stopped
