@@ -65,15 +65,3 @@ services:
     environment:
       - TZ=Europe/Berlin
 #      - MQTT_MOSQUITTO_SERVER_URL=tcp://mosquitto:1883
-
-#  homeassistant:
-#    container_name: homeassistant
-#    image: "ghcr.io/home-assistant/home-assistant:stable"
-#    volumes:
-#      - ./ha-data:/config
-#      - /etc/localtime:/etc/localtime:ro
-#      - /run/dbus:/run/dbus:ro
-#    restart: unless-stopped
-#    privileged: true
-#    network_mode: host
-#    devices:
