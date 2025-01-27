@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
 
   mosquitto:
-    image: eclipse-mosquitto
+    image: eclipse-mosquitto:${MOSQUITTO_IMAGE_TAG}
     container_name: mosquitto
     environment:
       - TZ=${TIMEZONE}
@@ -41,7 +41,7 @@ services:
     restart: unless-stopped
 
   zigbee2mqtt:
-    image: koenkk/zigbee2mqtt
+    image: koenkk/zigbee2mqtt:${ZIGBEE_2_MQTT_IMAGE_TAG}
     container_name: zigbee2mqtt
     environment:
       - TZ=${TIMEZONE}
