@@ -13,7 +13,6 @@ services:
 
   mosquitto:
     image: eclipse-mosquitto
-    hostname: mosquitto
     container_name: mosquitto
     environment:
       - TZ=${TIMEZONE}
@@ -22,8 +21,7 @@ services:
     volumes:
       - ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
       - ${AWS_IOT_MOSQUITTO_CONFIGURATION_FILE}:/mosquitto/config/mosquitto.conf
-    command: >
-      /bin/sh -c "/usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf 2>&1 | grep -v 'PING'"
+    command: /bin/sh -c "/usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf 2>&1 | grep -v 'PING'"
     restart: unless-stopped
 
   plex:
@@ -35,7 +33,6 @@ services:
       - PGID=1000
       - TZ=${TIMEZONE}
       - VERSION=docker
-      - PLEX_CLAIM= #optional
     volumes:
       - ${PLEX_CONTENT_DIRECTORY}/library:/config
       - ${PLEX_CONTENT_DIRECTORY}/tvseries:/tv
