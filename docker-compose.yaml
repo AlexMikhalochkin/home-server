@@ -2,11 +2,10 @@ version: "3.7"
 
 services:
   momomo:
-    image: alexmikhalochkin/momomo-worker:main
+    image: alexmikhalochkin/momomo-worker:${MOMOMO_IMAGE_TAG}
     container_name: momomo
     environment:
-      - TZ=Europe/Berlin
-    #      - MQTT_MOSQUITTO_SERVER_URL=tcp://mosquitto:1883
+      - TZ=${TIMEZONE}
     volumes:
       - ${MOMOMO_CONFIGURATION_DIRECTORY}:/config
     command: --spring.config.location=/config/
@@ -27,27 +26,27 @@ services:
     restart: unless-stopped
 
   plex:
-    image: lscr.io/linuxserver/plex:latest
+    image: lscr.io/linuxserver/plex:${PLEX_IMAGE_TAG}
     container_name: plex
     network_mode: host
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Etc/UTC
+      - TZ=${TIMEZONE}
       - VERSION=docker
       - PLEX_CLAIM= #optional
     volumes:
-      - /media/disk/sambashare/library:/config
-      - /media/disk/sambashare/tvseries:/tv
-      - /media/disk/sambashare/music:/music
-      - /media/disk/sambashare/movies:/movies
+      - ${PLEX_CONTENT_DIRECTORY}/library:/config
+      - ${PLEX_CONTENT_DIRECTORY}/tvseries:/tv
+      - ${PLEX_CONTENT_DIRECTORY}/music:/music
+      - ${PLEX_CONTENT_DIRECTORY}/movies:/movies
     restart: unless-stopped
 
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt
     container_name: zigbee2mqtt
     environment:
-      - TZ=Europe/Berlin
+      - TZ=${TIMEZONE}
     volumes:
       - ${ZIGBEE_2_MQTT_CONFIGURATION_DIRECTORY}:/app/data
       - /run/udev:/run/udev:ro
@@ -56,4 +55,3 @@ services:
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
     restart: unless-stopped
-
