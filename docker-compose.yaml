@@ -1,0 +1,96 @@
+version: "3.7"
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    hostname: mosquitto
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      #      - ./mosquitto:/etc/mosquitto
+      - ./aws-iot:/etc/mosquitto
+      - ./aws-iot/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    #      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    command: >
+      /bin/sh -c "/usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf 2>&1 | grep -v 'PING'"
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - VERSION=docker
+      - PLEX_CLAIM= #optional
+    volumes:
+      - /media/disk/sambashare/library:/config
+      - /media/disk/sambashare/tvseries:/tv
+      - /media/disk/sambashare/music:/music
+      - /media/disk/sambashare/movies:/movies
+    restart: unless-stopped
+  #  do-firewall-updater:
+  #    image: alexmikhalochkin/do-firewall-updater:latest
+  #    container_name: do-firewall-updater
+  #    environment:
+  #      - DIGITALOCEAN_ACCESS_TOKEN=test-token
+  #      - TARGET_HOST=jarvisdomain.ddns.net
+  #      - TARGET_PORT=1883
+  #      - CHECK_INTERVAL_SECONDS=900
+  #      - DIGITAL_OCEAN_FIREWALL_ID=test-id
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    image: koenkk/zigbee2mqtt
+    volumes:
+      - ./zigbee2mqtt-data:/app/data
+      - /run/udev:/run/udev:ro
+    ports:
+      - 8080:8080
+    environment:
+      - TZ=Europe/Berlin
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+
+  momomo:
+    container_name: momomo
+    restart: unless-stopped
+    image: alexmikhalochkin/momomo-worker:main
+    volumes:
+      - ./momomo:/config
+    command: --spring.config.location=/config/
+    environment:
+      - TZ=Europe/Berlin
+#      - MQTT_MOSQUITTO_SERVER_URL=tcp://mosquitto:1883
+
+#  homeassistant:
+#    container_name: homeassistant
+#    image: "ghcr.io/home-assistant/home-assistant:stable"
+#    volumes:
+#      - ./ha-data:/config
+#      - /etc/localtime:/etc/localtime:ro
+#      - /run/dbus:/run/dbus:ro
+#    restart: unless-stopped
+#    privileged: true
+#    network_mode: host
+#    devices:
+  #  jellyfin:
+  #    image: jellyfin/jellyfin
+  #    container_name: jellyfin
+  #    user: 1000:1000
+  #    network_mode: 'host'
+  #    volumes:
+  #      - ./jellyfin/config:/config
+  #      - ./jellyfin/cache:/cache
+  #      - type: bind
+  #        source: /media/disk/sambashare/tvseries
+  #        target: /tv
+  #      - type: bind
+  #        source: /media/disk/sambashare/tvseries
+  #        target: /movies
+  #        read_only: true
+  #    restart: 'unless-stopped'
+#      - /dev/ttyUSB0:/dev/ttyUSB0
