@@ -8,7 +8,7 @@ services:
       - TZ=Europe/Berlin
     #      - MQTT_MOSQUITTO_SERVER_URL=tcp://mosquitto:1883
     volumes:
-      - ./momomo:/config
+      - ${MOMOMO_CONFIGURATION_DIRECTORY}:/config
     command: --spring.config.location=/config/
     restart: unless-stopped
 
@@ -20,8 +20,8 @@ services:
       - "1883:1883"
       - "9001:9001"
     volumes:
-      - ./aws-iot:/etc/mosquitto
-      - ./aws-iot/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
+      - ${AWS_IOT_MOSQUITTO_CONFIGURATION_FILE}:/mosquitto/config/mosquitto.conf
     command: >
       /bin/sh -c "/usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf 2>&1 | grep -v 'PING'"
     restart: unless-stopped
@@ -49,7 +49,7 @@ services:
     environment:
       - TZ=Europe/Berlin
     volumes:
-      - ./zigbee2mqtt-data:/app/data
+      - ${ZIGBEE_2_MQTT_CONFIGURATION_DIRECTORY}:/app/data
       - /run/udev:/run/udev:ro
     ports:
       - "8080:8080"
