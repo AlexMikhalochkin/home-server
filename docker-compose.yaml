@@ -32,15 +32,7 @@ services:
       - /media/disk/sambashare/music:/music
       - /media/disk/sambashare/movies:/movies
     restart: unless-stopped
-  #  do-firewall-updater:
-  #    image: alexmikhalochkin/do-firewall-updater:latest
-  #    container_name: do-firewall-updater
-  #    environment:
-  #      - DIGITALOCEAN_ACCESS_TOKEN=test-token
-  #      - TARGET_HOST=jarvisdomain.ddns.net
-  #      - TARGET_PORT=1883
-  #      - CHECK_INTERVAL_SECONDS=900
-  #      - DIGITAL_OCEAN_FIREWALL_ID=test-id
+
   zigbee2mqtt:
     container_name: zigbee2mqtt
     restart: unless-stopped
