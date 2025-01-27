@@ -5,7 +5,6 @@ services:
     image: eclipse-mosquitto
     hostname: mosquitto
     container_name: mosquitto
-    restart: unless-stopped
     ports:
       - "1883:1883"
       - "9001:9001"
@@ -14,6 +13,8 @@ services:
       - ./aws-iot/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
     command: >
       /bin/sh -c "/usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf 2>&1 | grep -v 'PING'"
+    restart: unless-stopped
+
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
@@ -32,26 +33,26 @@ services:
     restart: unless-stopped
 
   zigbee2mqtt:
-    container_name: zigbee2mqtt
-    restart: unless-stopped
     image: koenkk/zigbee2mqtt
+    container_name: zigbee2mqtt
+    environment:
+      - TZ=Europe/Berlin
     volumes:
       - ./zigbee2mqtt-data:/app/data
       - /run/udev:/run/udev:ro
     ports:
-      - 8080:8080
-    environment:
-      - TZ=Europe/Berlin
+      - "8080:8080"
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
+    restart: unless-stopped
 
   momomo:
-    container_name: momomo
-    restart: unless-stopped
     image: alexmikhalochkin/momomo-worker:main
+    container_name: momomo
+    environment:
+      - TZ=Europe/Berlin
+    #      - MQTT_MOSQUITTO_SERVER_URL=tcp://mosquitto:1883
     volumes:
       - ./momomo:/config
     command: --spring.config.location=/config/
-    environment:
-      - TZ=Europe/Berlin
-#      - MQTT_MOSQUITTO_SERVER_URL=tcp://mosquitto:1883
+    restart: unless-stopped
