@@ -19,7 +19,6 @@ services:
       - TZ=${TIMEZONE}
     ports:
       - "1883:1883"
-      - "9001:9001"
     volumes:
       - ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
       - ${AWS_IOT_MOSQUITTO_CONFIGURATION_FILE}:/mosquitto/config/mosquitto.conf
