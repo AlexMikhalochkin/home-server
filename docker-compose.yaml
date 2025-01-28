@@ -14,16 +14,15 @@ services:
       - mosquitto
 
   mosquitto:
-    image: eclipse-mosquitto:${MOSQUITTO_IMAGE_TAG}
+    image: alexmikhalochkin/mosquitto:${MOSQUITTO_IMAGE_TAG}
     container_name: mosquitto
     environment:
       - TZ=${TIMEZONE}
+      - BRIDGE_ADDRESS=${AWS_IOT_BRIDGE_ADDRESS}
     ports:
       - "1883:1883"
     volumes:
       - ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
-      - ${AWS_IOT_MOSQUITTO_CONFIGURATION_FILE}:/mosquitto/config/mosquitto.conf
-    command: /bin/sh -c "/usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf 2>&1 | grep -v 'PING'"
     restart: unless-stopped
 
   plex:
