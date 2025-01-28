@@ -1,8 +1,7 @@
 name: Publish Docker image
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
 
 jobs:
   push_to_registry:
@@ -26,14 +25,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: alexmikhalochkin/do-firewall-updater
+          images: alexmikhalochkin/mosquitto
 
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./mosquitto/
+          file: ./mosquitto/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
