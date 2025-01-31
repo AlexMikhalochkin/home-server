@@ -1,5 +1,3 @@
-version: "3.7"
-
 services:
   momomo:
     image: alexmikhalochkin/momomo-worker:${MOMOMO_IMAGE_TAG}
@@ -56,3 +54,28 @@ services:
     restart: unless-stopped
     depends_on:
       - mosquitto
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  grafana-data:
