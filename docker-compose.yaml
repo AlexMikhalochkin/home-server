@@ -1,4 +1,15 @@
 services:
+  grafana:
+    image: grafana/grafana:${GRAFANA_IMAGE_TAG}
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+
   momomo:
     image: alexmikhalochkin/momomo-worker:${MOMOMO_IMAGE_TAG}
     container_name: momomo
@@ -23,6 +34,18 @@ services:
       - ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
     restart: unless-stopped
 
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:${NODE_EXPORTER_IMAGE_TAG}
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    volumes:
+      - '/:/host:ro,rslave'
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+
   plex:
     image: lscr.io/linuxserver/plex:${PLEX_IMAGE_TAG}
     container_name: plex
@@ -39,24 +62,8 @@ services:
       - ${PLEX_CONTENT_DIRECTORY}/movies:/movies
     restart: unless-stopped
 
-  zigbee2mqtt:
-    image: koenkk/zigbee2mqtt:${ZIGBEE_2_MQTT_IMAGE_TAG}
-    container_name: zigbee2mqtt
-    environment:
-      - TZ=${TIMEZONE}
-    volumes:
-      - ${ZIGBEE_2_MQTT_CONFIGURATION_DIRECTORY}:/app/data
-      - /run/udev:/run/udev:ro
-    ports:
-      - "8080:8080"
-    devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0
-    restart: unless-stopped
-    depends_on:
-      - mosquitto
-
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:${PROMETHEUS_IMAGE_TAG}
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -66,16 +73,21 @@ services:
       - "9090:9090"
     restart: unless-stopped
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:${ZIGBEE_2_MQTT_IMAGE_TAG}
+    container_name: zigbee2mqtt
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana-data:/var/lib/grafana
+      - TZ=${TIMEZONE}
     ports:
-      - "3000:3000"
+      - "8080:8080"
+    volumes:
+      - ${ZIGBEE_2_MQTT_CONFIGURATION_DIRECTORY}:/app/data
+      - /run/udev:/run/udev:ro
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
     restart: unless-stopped
+    depends_on:
+      - mosquitto
 
 volumes:
   grafana-data:

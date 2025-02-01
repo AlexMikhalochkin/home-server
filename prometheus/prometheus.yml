@@ -4,3 +4,8 @@ scrape_configs:
     scrape_interval: 15s
     static_configs:
       - targets: ['momomo:8080']
+
+  - job_name: 'node_exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['node_exporter:9100']
