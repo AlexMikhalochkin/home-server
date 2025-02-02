@@ -4,6 +4,7 @@ services:
     container_name: grafana
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=${TIMEZONE}
     ports:
       - "3000:3000"
     volumes:
@@ -37,6 +38,8 @@ services:
   node_exporter:
     image: quay.io/prometheus/node-exporter:${NODE_EXPORTER_IMAGE_TAG}
     container_name: node_exporter
+    environment:
+      - TZ=${TIMEZONE}
     command:
       - '--path.rootfs=/host'
     pid: host
@@ -65,8 +68,11 @@ services:
   prometheus:
     image: prom/prometheus:${PROMETHEUS_IMAGE_TAG}
     container_name: prometheus
+    environment:
+      - TZ=${TIMEZONE}
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
     ports:
@@ -91,3 +97,4 @@ services:
 
 volumes:
   grafana-data:
+  prometheus-data:
