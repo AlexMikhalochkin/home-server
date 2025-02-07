@@ -1,4 +1,16 @@
 services:
+  home-assistant:
+    container_name: home-assistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    restart: unless-stopped
+    environment:
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${HOME_ASSISTANT_CONFIGURATION_DIRECTORY}:/config
+      - /etc/localtime:/etc/localtime:ro
+    privileged: true
+    network_mode: host
+
   grafana:
     image: grafana/grafana:${GRAFANA_IMAGE_TAG}
     container_name: grafana
