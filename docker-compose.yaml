@@ -47,9 +47,9 @@ services:
       - ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
     restart: unless-stopped
 
-  node_exporter:
+  node-exporter:
     image: quay.io/prometheus/node-exporter:latest
-    container_name: node_exporter
+    container_name: node-exporter
     environment:
       - TZ=${TIMEZONE}
     command:
