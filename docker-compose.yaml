@@ -71,7 +71,7 @@ services:
       - TZ=${TIMEZONE}
       - VERSION=docker
     volumes:
-      - ${PLEX_CONTENT_DIRECTORY}/library:/config
+      - ${PLEX_CONFIG_DIRECTORY}/config:/config
       - ${PLEX_CONTENT_DIRECTORY}/content:/content
     devices:
       - /dev/dri:/dev/dri
