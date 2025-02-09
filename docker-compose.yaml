@@ -72,9 +72,9 @@ services:
       - VERSION=docker
     volumes:
       - ${PLEX_CONTENT_DIRECTORY}/library:/config
-      - ${PLEX_CONTENT_DIRECTORY}/tvseries:/tv
-      - ${PLEX_CONTENT_DIRECTORY}/music:/music
-      - ${PLEX_CONTENT_DIRECTORY}/movies:/movies
+      - ${PLEX_CONTENT_DIRECTORY}/content:/content
+    devices:
+      - /dev/dri:/dev/dri
     restart: unless-stopped
 
   prometheus:
