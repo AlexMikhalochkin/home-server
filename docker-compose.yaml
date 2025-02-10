@@ -10,7 +10,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - TZ=${TIMEZONE}
     ports:
-      - '127.0.0.1:3000:3000'
+      - '3000:3000'
     restart: unless-stopped
 
   home-assistant:
@@ -46,7 +46,7 @@ services:
       - TZ=${TIMEZONE}
       - BRIDGE_ADDRESS=${AWS_IOT_BRIDGE_ADDRESS}
     ports:
-      - '127.0.0.1:1883:1883'
+      - '1883:1883'
     restart: unless-stopped
 
   node-exporter:
@@ -57,7 +57,7 @@ services:
     environment:
       - TZ=${TIMEZONE}
     ports:
-      - '127.0.0.1:9100:9100'
+      - '9100:9100'
     command:
       - '--path.rootfs=/host'
     restart: unless-stopped
@@ -88,7 +88,7 @@ services:
     environment:
       - TZ=${TIMEZONE}
     ports:
-      - '127.0.0.1:9090:9090'
+      - '9090:9090'
     command:
       - --config.file=/etc/prometheus/prometheus.yml
     restart: unless-stopped
@@ -116,7 +116,7 @@ services:
     environment:
       - TZ=${TIMEZONE}
     ports:
-      - '127.0.0.1:8080:8080'
+      - '8080:8080'
     restart: unless-stopped
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
