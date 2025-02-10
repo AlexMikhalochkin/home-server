@@ -1,0 +1,5 @@
+{
+  "rules": {
+    "service-image-require-explicit-tag": 0
+  }
+}
