@@ -2,93 +2,93 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - TZ=${TIMEZONE}
     ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
+      - '3000:3000'
     restart: unless-stopped
 
   home-assistant:
-    container_name: home-assistant
     image: ghcr.io/home-assistant/home-assistant:stable
-    restart: unless-stopped
-    environment:
-      - TZ=${TIMEZONE}
+    container_name: home-assistant
     volumes:
       - ${HOME_ASSISTANT_CONFIGURATION_DIRECTORY}:/config
       - /etc/localtime:/etc/localtime:ro
-    privileged: true
+    environment:
+      - TZ=${TIMEZONE}
     network_mode: host
+    restart: unless-stopped
+    privileged: true
 
   momomo:
     image: alexmikhalochkin/momomo-worker:main
     container_name: momomo
-    environment:
-      - TZ=${TIMEZONE}
-    volumes:
-      - ${MOMOMO_CONFIGURATION_DIRECTORY}:/config
-    command: --spring.config.location=/config/
-    restart: unless-stopped
     depends_on:
       - mosquitto
+    volumes:
+      - ${MOMOMO_CONFIGURATION_DIRECTORY}:/config
+    environment:
+      - TZ=${TIMEZONE}
+    command: --spring.config.location=/config/
+    restart: unless-stopped
 
   mosquitto:
     image: alexmikhalochkin/mosquitto:main
     container_name: mosquitto
+    volumes:
+      - ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
     environment:
       - TZ=${TIMEZONE}
       - BRIDGE_ADDRESS=${AWS_IOT_BRIDGE_ADDRESS}
     ports:
-      - "1883:1883"
-    volumes:
-      - ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
+      - '1883:1883'
     restart: unless-stopped
 
   node-exporter:
     image: quay.io/prometheus/node-exporter:latest
     container_name: node-exporter
+    volumes:
+      - /:/host:ro,rslave
     environment:
       - TZ=${TIMEZONE}
+    ports:
+      - '9100:9100'
     command:
       - '--path.rootfs=/host'
-    pid: host
-    volumes:
-      - '/:/host:ro,rslave'
-    ports:
-      - "9100:9100"
     restart: unless-stopped
+    pid: host
 
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
-    network_mode: host
+    volumes:
+      - ${PLEX_CONFIG_DIRECTORY}/config:/config
+      - ${PLEX_CONTENT_DIRECTORY}/content:/content
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=${TIMEZONE}
       - VERSION=docker
-    volumes:
-      - ${PLEX_CONFIG_DIRECTORY}/config:/config
-      - ${PLEX_CONTENT_DIRECTORY}/content:/content
+    network_mode: host
+    restart: unless-stopped
     devices:
       - /dev/dri:/dev/dri
-    restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
-    environment:
-      - TZ=${TIMEZONE}
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
+    environment:
+      - TZ=${TIMEZONE}
+    ports:
+      - '9090:9090'
     command:
       - --config.file=/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
     restart: unless-stopped
 
   watchtower:
@@ -107,18 +107,18 @@ services:
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:latest
     container_name: zigbee2mqtt
-    environment:
-      - TZ=${TIMEZONE}
-    ports:
-      - "8080:8080"
+    depends_on:
+      - mosquitto
     volumes:
       - ${ZIGBEE_2_MQTT_CONFIGURATION_DIRECTORY}:/app/data
       - /run/udev:/run/udev:ro
+    environment:
+      - TZ=${TIMEZONE}
+    ports:
+      - '8080:8080'
+    restart: unless-stopped
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
-    restart: unless-stopped
-    depends_on:
-      - mosquitto
 
 volumes:
   grafana-data:
