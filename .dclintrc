@@ -1,5 +1,6 @@
 {
   "rules": {
-    "service-image-require-explicit-tag": 0
+    "service-image-require-explicit-tag": 0,
+    "no-unbound-port-interfaces": 0
   }
 }
