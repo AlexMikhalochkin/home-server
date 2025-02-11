@@ -35,7 +35,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=${TIMEZONE}
-      - JELLYFIN_PublishedServerUrl=http://192.168.0.5
+      - JELLYFIN_PublishedServerUrl=${JELLYFIN_SERVER_URL}
     ports:
       - '1900:1900/udp'
       - '7359:7359/udp'
