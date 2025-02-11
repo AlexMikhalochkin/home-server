@@ -25,6 +25,24 @@ services:
     restart: unless-stopped
     privileged: true
 
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    volumes:
+      - ${JELLYFIN_CONFIGURATION_DIRECTORY}:/config
+      - ${JELLYFIN_CONTENT_DIRECTORY}:/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TIMEZONE}
+      - JELLYFIN_PublishedServerUrl=http://192.168.0.5
+    ports:
+      - '1900:1900/udp'
+      - '7359:7359/udp'
+      - '8096:8096'
+      - '8920:8920'
+    restart: unless-stopped
+
   momomo:
     image: alexmikhalochkin/momomo-worker:main
     container_name: momomo
