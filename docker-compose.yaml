@@ -23,7 +23,6 @@ services:
       - TZ=${TIMEZONE}
     network_mode: host
     restart: unless-stopped
-    privileged: true
 
   momomo:
     image: alexmikhalochkin/momomo-worker:main
