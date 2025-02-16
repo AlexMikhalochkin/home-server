@@ -92,18 +92,6 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
     restart: unless-stopped
 
-  watchtower:
-    image: containrrr/watchtower
-    container_name: watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - TZ=${TIMEZONE}
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_ROLLING_RESTART=true
-      - WATCHTOWER_SCHEDULE=0 0 4 * * *
-    restart: unless-stopped
-
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:latest
     container_name: zigbee2mqtt
