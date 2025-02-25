@@ -33,7 +33,7 @@ services:
     depends_on:
       - mosquitto
     volumes:
-      - ${MOMOMO_CONFIGURATION_DIRECTORY}:/config
+      - ../home-server-configuration/momomo/application.yaml:/config/application.yaml
     environment:
       - TZ=${TIMEZONE}
     command: --spring.config.location=/config/
