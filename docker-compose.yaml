@@ -43,7 +43,8 @@ services:
     image: alexmikhalochkin/mosquitto:main
     container_name: mosquitto
     volumes:
-      - ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
+      #- ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
+      - ../home-server-configuration/mosquitto:/etc/mosquitto/certs
     environment:
       - TZ=${TIMEZONE}
       - BRIDGE_ADDRESS=${AWS_IOT_BRIDGE_ADDRESS}
