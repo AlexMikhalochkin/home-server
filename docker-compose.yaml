@@ -18,7 +18,6 @@ services:
     container_name: home-assistant
     volumes:
       - ${HOME_ASSISTANT_CONFIGURATION_DIRECTORY}:/config
-      - ./homeassistant/configuration.yaml:/config/configuration.yaml
       - ../home-server-configuration/home-assistant/configuration.yaml:/config/configuration.yaml
       - ../home-server-configuration/home-assistant/automations.yaml:/config/automations.yaml
       - /etc/localtime:/etc/localtime:ro
@@ -43,7 +42,6 @@ services:
     image: alexmikhalochkin/mosquitto:main
     container_name: mosquitto
     volumes:
-      #- ${AWS_IOT_CONFIGURATION_DIRECTORY}:/etc/mosquitto
       - ../home-server-configuration/mosquitto:/etc/mosquitto/certs
     environment:
       - TZ=${TIMEZONE}
