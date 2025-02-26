@@ -12,6 +12,8 @@ services:
     ports:
       - '3000:3000'
     restart: unless-stopped
+    cap_drop:
+      - ALL
 
   home-assistant:
     image: homeassistant/home-assistant:2025.2.5
@@ -25,6 +27,8 @@ services:
       - TZ=${TIMEZONE}
     network_mode: host
     restart: unless-stopped
+    cap_drop:
+      - ALL
 
   momomo:
     image: alexmikhalochkin/momomo-worker:main
@@ -37,6 +41,8 @@ services:
       - TZ=${TIMEZONE}
     command: --spring.config.location=/config/
     restart: unless-stopped
+    cap_drop:
+      - ALL
 
   mosquitto:
     image: alexmikhalochkin/mosquitto:main
@@ -49,6 +55,8 @@ services:
     ports:
       - '1883:1883'
     restart: unless-stopped
+    cap_drop:
+      - ALL
 
   node-exporter:
     image: prom/node-exporter:v1.9.0
@@ -62,6 +70,8 @@ services:
     command:
       - '--path.rootfs=/host'
     restart: unless-stopped
+    cap_drop:
+      - ALL
     pid: host
 
   plex:
@@ -77,6 +87,8 @@ services:
       - VERSION=docker
     network_mode: host
     restart: unless-stopped
+    cap_drop:
+      - ALL
     devices:
       - /dev/dri:/dev/dri
 
@@ -93,6 +105,8 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
     restart: unless-stopped
+    cap_drop:
+      - ALL
 
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:2.1.1
@@ -109,6 +123,8 @@ services:
     ports:
       - '8080:8080'
     restart: unless-stopped
+    cap_drop:
+      - ALL
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
 
