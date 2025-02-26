@@ -87,6 +87,7 @@ services:
     image: prom/node-exporter:v1.9.0
     container_name: node-exporter
     volumes:
+      # kics-scan ignore-line
       - /:/host:ro,rslave
     environment:
       - TZ=${TIMEZONE}
