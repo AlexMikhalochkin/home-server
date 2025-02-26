@@ -106,7 +106,6 @@ services:
       - ../home-server-configuration/zigbee2mqtt/coordinator_backup.json:/app/data/coordinator_backup.json
       - ../home-server-configuration/zigbee2mqtt/configuration.yaml:/app/data/configuration.yaml
       - ../home-server-configuration/zigbee2mqtt/database.db:/app/data/database.db
-      - /run/udev:/run/udev:ro
     environment:
       - TZ=${TIMEZONE}
     ports:
