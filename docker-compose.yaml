@@ -22,7 +22,6 @@ services:
       - ${HOME_ASSISTANT_CONFIGURATION_DIRECTORY}:/config
       - ../home-server-configuration/home-assistant/configuration.yaml:/config/configuration.yaml
       - ../home-server-configuration/home-assistant/automations.yaml:/config/automations.yaml
-      - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=${TIMEZONE}
     network_mode: host
