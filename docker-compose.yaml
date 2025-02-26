@@ -2,7 +2,7 @@ name: home-server
 
 services:
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.5.2
     container_name: grafana
     volumes:
       - grafana-data:/var/lib/grafana
@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
 
   home-assistant:
-    image: ghcr.io/home-assistant/home-assistant:stable
+    image: home-assistant/home-assistant:2025.2.5
     container_name: home-assistant
     volumes:
       - ${HOME_ASSISTANT_CONFIGURATION_DIRECTORY}:/config
@@ -51,7 +51,7 @@ services:
     restart: unless-stopped
 
   node-exporter:
-    image: quay.io/prometheus/node-exporter:latest
+    image: prom/node-exporter:v1.9.0
     container_name: node-exporter
     volumes:
       - /:/host:ro,rslave
@@ -65,7 +65,7 @@ services:
     pid: host
 
   plex:
-    image: lscr.io/linuxserver/plex:latest
+    image: linuxserver/plex:1.41.4
     container_name: plex
     volumes:
       - ${PLEX_CONFIG_DIRECTORY}/config:/config
@@ -81,7 +81,7 @@ services:
       - /dev/dri:/dev/dri
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.2.1
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -95,7 +95,7 @@ services:
     restart: unless-stopped
 
   zigbee2mqtt:
-    image: koenkk/zigbee2mqtt:latest
+    image: koenkk/zigbee2mqtt:2.1.1
     container_name: zigbee2mqtt
     depends_on:
       - mosquitto
