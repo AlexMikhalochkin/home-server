@@ -72,7 +72,7 @@ services:
       - TZ=${TIMEZONE}
       - BRIDGE_ADDRESS=${AWS_IOT_BRIDGE_ADDRESS}
     ports:
-      - '${HOST_IP}:1883:1883'
+      - '1883:1883'
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "mosquitto_sub -h localhost -t '#' -C 1 || exit 1" ]
