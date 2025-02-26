@@ -61,8 +61,6 @@ services:
       - /:/host:ro,rslave
     environment:
       - TZ=${TIMEZONE}
-    ports:
-      - '${HOST_IP}:9100:9100'
     command:
       - '--path.rootfs=/host'
     restart: unless-stopped
@@ -94,8 +92,6 @@ services:
       - prometheus-data:/prometheus
     environment:
       - TZ=${TIMEZONE}
-    ports:
-      - '${HOST_IP}:9090:9090'
     command:
       - --config.file=/etc/prometheus/prometheus.yml
     restart: unless-stopped
