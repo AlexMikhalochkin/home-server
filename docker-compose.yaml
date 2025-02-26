@@ -100,7 +100,6 @@ services:
     depends_on:
       - mosquitto
     volumes:
-      - ../home-server-configuration/zigbee2mqtt/state.json:/app/data/state.json
       - ../home-server-configuration/zigbee2mqtt/coordinator_backup.json:/app/data/coordinator_backup.json
       - ../home-server-configuration/zigbee2mqtt/configuration.yaml:/app/data/configuration.yaml
       - ../home-server-configuration/zigbee2mqtt/database.db:/app/data/database.db
