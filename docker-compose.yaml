@@ -64,13 +64,13 @@ services:
       - no-new-privileges:true
 
   mosquitto:
-    image: alexmikhalochkin/mosquitto:main
+    image: eclipse-mosquitto:2.0.20
     container_name: mosquitto
     volumes:
-      - ../home-server-configuration/mosquitto:/etc/mosquitto/certs
+      - ../home-server-configuration/mosquitto/certs:/etc/mosquitto/certs
+      - ../home-server-configuration/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
     environment:
       - TZ=${TIMEZONE}
-      - BRIDGE_ADDRESS=${AWS_IOT_BRIDGE_ADDRESS}
     ports:
       - '1883:1883'
     restart: unless-stopped
