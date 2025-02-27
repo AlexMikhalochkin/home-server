@@ -1,3 +1,5 @@
+name: home-server
+
 services:
   grafana:
     image: grafana/grafana:11.5.2
@@ -51,7 +53,7 @@ services:
     command: --spring.config.location=/config/
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1" ]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
       interval: 1m30s
       timeout: 10s
       retries: 3
@@ -78,12 +80,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    user: 1000:1000
     cap_drop:
       - ALL
-    cap_add:
-      - CHOWN
-      - SETGID
-      - SETUID
     security_opt:
       - no-new-privileges:true
 
@@ -140,7 +139,7 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/metrics || exit 1" ]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/metrics || exit 1"]
       interval: 1m30s
       timeout: 10s
       retries: 3
@@ -161,7 +160,7 @@ services:
       - '${HOST_IP}:8080:8080'
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1" ]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1"]
       interval: 1m30s
       timeout: 10s
       retries: 3
