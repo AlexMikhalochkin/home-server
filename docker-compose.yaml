@@ -44,8 +44,6 @@ services:
   momomo:
     image: alexmikhalochkin/momomo-worker:main
     container_name: momomo
-    depends_on:
-      - mosquitto
     volumes:
       - ../home-server-configuration/momomo/application.yaml:/config/application.yaml
     environment:
@@ -149,8 +147,6 @@ services:
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:2.1.1
     container_name: zigbee2mqtt
-    depends_on:
-      - mosquitto
     volumes:
       - ../home-server-configuration/zigbee2mqtt:/app/data
     environment:
