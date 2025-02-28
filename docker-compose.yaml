@@ -32,7 +32,8 @@ services:
       - ../home-server-configuration/home-assistant/automations.yaml:/config/automations.yaml
     environment:
       - TZ=${TIMEZONE}
-    network_mode: host
+    ports:
+      - '${HOST_IP}:8123:8123'
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8123 || exit 1" ]
@@ -40,6 +41,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
 
@@ -158,9 +161,6 @@ services:
       - TZ=${TIMEZONE}
     ports:
       - '${HOST_IP}:8080:8080'
-    user: 1000:1000
-    group_add:
-      - dialout
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1"]
@@ -168,10 +168,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    user: 1000:1000
     cap_drop:
       - ALL
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
+    group_add:
+      - dialout
     security_opt:
       - no-new-privileges:true
 
