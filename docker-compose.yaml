@@ -5,11 +5,15 @@ services:
     image: grafana/grafana:11.5.2
     container_name: grafana
     volumes:
+      # ignore false positive 8c978947-0ff6-485c-b0c2-0bfca6026466, since grafana-data is not a shared volume
+      # kics-scan ignore-line
       - grafana-data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - TZ=${TIMEZONE}
     ports:
+      # ignore false positive 451d79dc-0588-476a-ad03-3c7f0320abb3, since kics-scan does not support variable substitution
+      # kics-scan ignore-line
       - '${HOST_IP}:3000:3000'
     restart: unless-stopped
     healthcheck:
@@ -33,6 +37,8 @@ services:
     environment:
       - TZ=${TIMEZONE}
     ports:
+      # ignore false positive 451d79dc-0588-476a-ad03-3c7f0320abb3, since kics-scan does not support variable substitution
+      # kics-scan ignore-line
       - '${HOST_IP}:8123:8123'
     restart: unless-stopped
     healthcheck:
@@ -135,6 +141,8 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      # ignore false positive 8c978947-0ff6-485c-b0c2-0bfca6026466, since prometheus-data is not a shared volume
+      # kics-scan ignore-line
       - prometheus-data:/prometheus
     environment:
       - TZ=${TIMEZONE}
@@ -160,6 +168,8 @@ services:
     environment:
       - TZ=${TIMEZONE}
     ports:
+      # ignore false positive 451d79dc-0588-476a-ad03-3c7f0320abb3, since kics-scan does not support variable substitution
+      # kics-scan ignore-line
       - '${HOST_IP}:8080:8080'
     restart: unless-stopped
     healthcheck:
