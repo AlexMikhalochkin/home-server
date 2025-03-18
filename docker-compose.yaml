@@ -212,10 +212,11 @@ services:
       - media:/usr/src/paperless/media
       - ../home-server-configuration/export:/usr/src/paperless/export
       - ../home-server-configuration/consume:/usr/src/paperless/consume
-    env_file: docker-compose.env
     environment:
       PAPERLESS_REDIS: redis://broker:6379
       PAPERLESS_DBHOST: db
+      PAPERLESS_ADMIN_USER: admin
+      PAPERLESS_ADMIN_PASSWORD: admin
 
 volumes:
   grafana-data:
