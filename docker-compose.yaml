@@ -109,6 +109,26 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:2.14.7
+    container_name: paperless
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - data:/usr/src/paperless/data
+      - media:/usr/src/paperless/media
+      - ../home-server-configuration/export:/usr/src/paperless/export
+      - ../home-server-configuration/consume:/usr/src/paperless/consume
+    environment:
+      PAPERLESS_REDIS: redis://redis:6379
+      PAPERLESS_DBHOST: postgres
+      PAPERLESS_ADMIN_USER: admin
+      PAPERLESS_ADMIN_PASSWORD: admin
+    ports:
+      - '8000:8000'
+    restart: unless-stopped
+
   plex:
     image: linuxserver/plex:1.41.4
     container_name: plex
@@ -133,6 +153,17 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  postgres:
+    image: docker.io/library/postgres:17
+    container_name: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: paperless
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v3.2.1
     container_name: prometheus
@@ -155,6 +186,13 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+
+  redis:
+    image: docker.io/library/redis:7
+    container_name: redis
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
 
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:2.1.1
@@ -182,41 +220,6 @@ services:
       - dialout
     security_opt:
       - no-new-privileges:true
-
-  broker:
-    image: docker.io/library/redis:7
-    restart: unless-stopped
-    volumes:
-      - redisdata:/data
-
-  db:
-    image: docker.io/library/postgres:17
-    restart: unless-stopped
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: paperless
-      POSTGRES_USER: paperless
-      POSTGRES_PASSWORD: paperless
-
-  webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:latest
-    restart: unless-stopped
-    depends_on:
-      - db
-      - broker
-    ports:
-      - "8000:8000"
-    volumes:
-      - data:/usr/src/paperless/data
-      - media:/usr/src/paperless/media
-      - ../home-server-configuration/export:/usr/src/paperless/export
-      - ../home-server-configuration/consume:/usr/src/paperless/consume
-    environment:
-      PAPERLESS_REDIS: redis://broker:6379
-      PAPERLESS_DBHOST: db
-      PAPERLESS_ADMIN_USER: admin
-      PAPERLESS_ADMIN_PASSWORD: admin
 
 volumes:
   grafana-data:
