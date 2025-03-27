@@ -110,7 +110,7 @@ services:
       - paperless
 
   plex:
-    image: linuxserver/plex:1.41.4
+    image: linuxserver/plex:1.41.5
     container_name: plex
     volumes:
       - ${PLEX_CONFIG_DIRECTORY}/config:/config
