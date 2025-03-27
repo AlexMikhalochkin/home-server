@@ -48,12 +48,6 @@ services:
       - '8081:8080'
     command: --spring.config.location=/config/
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     cap_drop:
       - ALL
     security_opt:
@@ -164,12 +158,6 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/metrics || exit 1"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     cap_drop:
       - ALL
     security_opt:
