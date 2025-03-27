@@ -38,12 +38,6 @@ services:
       # kics-scan ignore-line
       - '${HOST_IP}:8123:8123'
     restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:8123 || exit 1" ]
-      interval: 1m30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     cap_drop:
       - ALL
     security_opt:
@@ -146,12 +140,6 @@ services:
       - VERSION=docker
     network_mode: host
     restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:32400/web || exit 1" ]
-      interval: 1m30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     devices:
       - /dev/dri:/dev/dri
     security_opt:
