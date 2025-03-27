@@ -14,12 +14,6 @@ services:
       # kics-scan ignore-line
       - '${HOST_IP}:3000:3000'
     restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:3000 || exit 1" ]
-      interval: 1m30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     cap_drop:
       - ALL
     security_opt:
@@ -201,12 +195,6 @@ services:
       # kics-scan ignore-line
       - '${HOST_IP}:8080:8080'
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     user: 1000:1000
     cap_drop:
       - ALL
