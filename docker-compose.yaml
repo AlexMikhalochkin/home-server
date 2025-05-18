@@ -28,9 +28,7 @@ services:
       - ../home-server-configuration/home-assistant/automations.yaml:/config/automations.yaml
     environment:
       - TZ=${TIMEZONE}
-    ports:
-      # kics-scan ignore-line
-      - '${HOST_IP}:8123:8123'
+    network_mode: "service:openvpn"
     restart: unless-stopped
     cap_drop:
       - ALL
