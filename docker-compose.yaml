@@ -35,6 +35,19 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  matterbridge:
+    image: luligu/matterbridge:3.2.4
+    container_name: matterbridge
+    volumes:
+      - ../home-server-configuration/Matterbridge:/root/Matterbridge
+      - ../home-server-configuration/.matterbridge:/root/.matterbridge
+    network_mode: host
+    restart: always
+#    cap_drop:
+#      - ALL
+#    security_opt:
+#      - no-new-privileges:true
+
   momomo:
     image: alexmikhalochkin/momomo-worker:main
     container_name: momomo
