@@ -176,6 +176,46 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    volumes:
+      # kics-scan ignore-line
+      - loki-data:/loki
+    environment:
+      - TZ=${TIMEZONE}
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    depends_on:
+      - loki
+    volumes:
+      - ./promtail/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+      - promtail-positions:/positions
+    environment:
+      - TZ=${TIMEZONE}
+    command: ["-config.file=/etc/promtail/config.yml"]
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
 volumes:
   grafana-data:
   prometheus-data:
+  data:
+  media:
+  pgdata:
+  redisdata:
+  loki-data:
+  promtail-positions:
