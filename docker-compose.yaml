@@ -8,8 +8,10 @@ services:
       # kics-scan ignore-line
       - grafana-data:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
       - TZ=${TIMEZONE}
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
     ports:
       # kics-scan ignore-line
       - '${HOST_IP}:3000:3000'
