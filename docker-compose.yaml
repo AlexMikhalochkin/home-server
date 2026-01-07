@@ -50,22 +50,6 @@ services:
 #    security_opt:
 #      - no-new-privileges:true
 
-  momomo:
-    image: alexmikhalochkin/momomo-worker:main
-    container_name: momomo
-    volumes:
-      - ../home-server-configuration/momomo/application.yaml:/config/application.yaml
-    environment:
-      - TZ=${TIMEZONE}
-    ports:
-      - '8081:8080'
-    command: --spring.config.location=/config/
-    restart: unless-stopped
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-
   mosquitto:
     image: eclipse-mosquitto:2.0.20
     container_name: mosquitto
