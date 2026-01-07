@@ -100,28 +100,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  paperless:
-    image: ghcr.io/paperless-ngx/paperless-ngx:2.14.7
-    container_name: paperless
-    depends_on:
-      - postgres
-      - redis
-    volumes:
-      - data:/usr/src/paperless/data
-      - media:/usr/src/paperless/media
-      - ../home-server-configuration/export:/usr/src/paperless/export
-      - ../home-server-configuration/consume:/usr/src/paperless/consume
-    environment:
-      PAPERLESS_REDIS: redis://redis:6379
-      PAPERLESS_DBHOST: postgres
-      PAPERLESS_ADMIN_USER: admin
-      PAPERLESS_ADMIN_PASSWORD: admin
-    ports:
-      - '8000:8000'
-    restart: unless-stopped
-    profiles:
-      - paperless
-
   plex:
     image: linuxserver/plex:1.41.5
     container_name: plex
@@ -140,19 +118,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  postgres:
-    image: docker.io/library/postgres:17
-    container_name: postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: paperless
-      POSTGRES_USER: paperless
-      POSTGRES_PASSWORD: paperless
-    restart: unless-stopped
-    profiles:
-      - paperless
-
   prometheus:
     image: prom/prometheus:v3.2.1
     container_name: prometheus
@@ -169,15 +134,6 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-
-  redis:
-    image: docker.io/library/redis:7
-    container_name: redis
-    volumes:
-      - redisdata:/data
-    restart: unless-stopped
-    profiles:
-      - paperless
 
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:2.1.1
@@ -203,7 +159,3 @@ services:
 volumes:
   grafana-data:
   prometheus-data:
-  data:
-  media:
-  pgdata:
-  redisdata:
