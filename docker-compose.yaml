@@ -38,7 +38,7 @@ services:
       - no-new-privileges:true
 
   matterbridge:
-    image: luligu/matterbridge:3.2.4
+    image: luligu/matterbridge:3.4.6
     container_name: matterbridge
     volumes:
       - ../home-server-configuration/Matterbridge:/root/Matterbridge
