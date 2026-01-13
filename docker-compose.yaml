@@ -107,6 +107,12 @@ services:
     restart: unless-stopped
     devices:
       - /dev/dri:/dev/dri
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - CHOWN
     security_opt:
       - no-new-privileges:true
     healthcheck:
