@@ -12,8 +12,8 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
+    # kics-scan ignore-line
     ports:
-      # kics-scan ignore-line
       - '${HOST_IP}:3000:3000'
     restart: unless-stopped
     cap_drop:
@@ -146,8 +146,8 @@ services:
       - ../home-server-configuration/zigbee2mqtt:/app/data
     environment:
       - TZ=${TIMEZONE}
+    # kics-scan ignore-line
     ports:
-      # kics-scan ignore-line
       - '${HOST_IP}:8080:8080'
     restart: unless-stopped
     user: 1000:1000
