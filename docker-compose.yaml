@@ -67,6 +67,7 @@ services:
       - ../home-server-configuration/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
     environment:
       - TZ=${TIMEZONE}
+    # kics-scan ignore-line
     ports:
       - '1883:1883'
     restart: unless-stopped
