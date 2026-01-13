@@ -20,6 +20,12 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   home-assistant:
     image: homeassistant/home-assistant:2025.2.5
@@ -103,6 +109,12 @@ services:
       - /dev/dri:/dev/dri
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:32400/identity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   prometheus:
     image: prom/prometheus:v3.2.1
@@ -120,6 +132,12 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:2.1.1
