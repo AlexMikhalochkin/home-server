@@ -80,6 +80,8 @@ services:
     restart: unless-stopped
     cap_drop:
       - ALL
+    # Required for node-exporter to collect host process metrics
+    # kics-scan ignore-line
     pid: host
     security_opt:
       - no-new-privileges:true
