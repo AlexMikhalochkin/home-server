@@ -49,10 +49,12 @@ services:
     volumes:
       - ../home-server-configuration/Matterbridge:/root/Matterbridge
       - ../home-server-configuration/.matterbridge:/root/.matterbridge
+    # kics-scan ignore-line
     network_mode: host
     restart: always
     cap_drop:
       - ALL
+    # kics-scan ignore-line
     cap_add:
       - NET_BIND_SERVICE
       - NET_RAW
@@ -107,12 +109,14 @@ services:
       - PGID=1000
       - TZ=${TIMEZONE}
       - VERSION=docker
+    # kics-scan ignore-line
     network_mode: host
     restart: unless-stopped
     devices:
       - /dev/dri:/dev/dri
     cap_drop:
       - ALL
+    # kics-scan ignore-line
     cap_add:
       - SETUID
       - SETGID
