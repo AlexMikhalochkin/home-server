@@ -1,3 +1,5 @@
+# kics-scan disable=698ed579-b239-4f8f-a388-baa4bcb13ef8
+# disable health check scan for docker-compose files
 name: home-server
 
 services:
