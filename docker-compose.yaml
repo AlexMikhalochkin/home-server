@@ -1,5 +1,5 @@
-# kics-scan disable=698ed579-b239-4f8f-a388-baa4bcb13ef8
-# disable health check scan for docker-compose files
+# kics-scan disable=698ed579-b239-4f8f-a388-baa4bcb13ef8,451d79dc-0588-476a-ad03-3c7f0320abb3
+# disable queries: health check, container traffic not bound to host interface
 name: home-server
 
 services:
@@ -14,7 +14,6 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=true
-    # kics-scan ignore-line
     ports:
       - '${HOST_IP}:3000:3000'
     restart: unless-stopped
@@ -71,7 +70,6 @@ services:
       - ../home-server-configuration/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
     environment:
       - TZ=${TIMEZONE}
-    # kics-scan ignore-line
     ports:
       - '1883:1883'
     restart: unless-stopped
@@ -162,7 +160,6 @@ services:
       - ../home-server-configuration/zigbee2mqtt:/app/data
     environment:
       - TZ=${TIMEZONE}
-    # kics-scan ignore-line
     ports:
       - '${HOST_IP}:8080:8080'
     restart: unless-stopped
