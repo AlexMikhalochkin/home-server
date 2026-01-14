@@ -17,16 +17,24 @@ services:
     ports:
       - '${HOST_IP}:3000:3000'
     restart: unless-stopped
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/api/health"
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
 
   home-assistant:
     image: homeassistant/home-assistant:2025.2.5
@@ -53,12 +61,12 @@ services:
     # kics-scan ignore-line
     network_mode: host
     restart: always
-    cap_drop:
-      - ALL
     # kics-scan ignore-line
     cap_add:
       - NET_BIND_SERVICE
       - NET_RAW
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
 
@@ -112,23 +120,23 @@ services:
     # kics-scan ignore-line
     network_mode: host
     restart: unless-stopped
-    devices:
-      - /dev/dri:/dev/dri
-    cap_drop:
-      - ALL
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:32400/identity" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     # kics-scan ignore-line
     cap_add:
       - SETUID
       - SETGID
       - CHOWN
+    cap_drop:
+      - ALL
+    devices:
+      - /dev/dri:/dev/dri
     security_opt:
       - no-new-privileges:true
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:32400/identity"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   prometheus:
     image: prom/prometheus:v3.2.1
@@ -142,16 +150,24 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
     restart: unless-stopped
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9090/-/healthy"
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
 
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:2.1.1
