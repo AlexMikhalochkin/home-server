@@ -3,6 +3,20 @@
 name: home-server
 
 services:
+  dozzle:
+    image: amir20/dozzle:v8.10.5
+    container_name: dozzle
+    volumes:
+      # kics-scan ignore-line
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - '${HOST_IP}:8888:8080'
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
   grafana:
     image: grafana/grafana:11.5.2
     container_name: grafana
