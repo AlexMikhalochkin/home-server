@@ -120,6 +120,41 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  openvpn:
+    image: dperson/openvpn-client:amd64
+    container_name: openvpn
+    volumes:
+      # kics-scan ignore-line
+      - /dev/net:/dev/net:z
+      - ../home-server-configuration/openvpn:/vpn
+    environment:
+      - PUID=1030
+      - PGID=100
+      - TZ=${TIMEZONE}
+    ports:
+      - '8123:8123'
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    # kics-scan ignore-line
+    cap_add:
+      - net_admin
+      - SETGID
+      - SETUID
+    cap_drop:
+      - ALL
+    dns:
+      - 8.8.4.4
+      - 8.8.8.8
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    stdin_open: true
+    tmpfs:
+      - /run
+      - /tmp
+    tty: true
+
   plex:
     image: linuxserver/plex:1.42.2
     container_name: plex
