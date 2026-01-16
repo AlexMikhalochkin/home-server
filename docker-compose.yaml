@@ -72,6 +72,8 @@ services:
     volumes:
       - ../home-server-configuration/Matterbridge:/root/Matterbridge
       - ../home-server-configuration/.matterbridge:/root/.matterbridge
+    environment:
+      - TZ=${TIMEZONE}
     # kics-scan ignore-line
     network_mode: host
     restart: always
@@ -90,6 +92,10 @@ services:
     volumes:
       - ../home-server-configuration/mosquitto/certs:/etc/mosquitto/certs
       - ../home-server-configuration/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      # kics-scan ignore-line
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+      # kics-scan ignore-line
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=${TIMEZONE}
     ports:
