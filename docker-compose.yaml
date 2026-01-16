@@ -4,7 +4,7 @@ name: home-server
 
 services:
   dozzle:
-    image: amir20/dozzle:v8.10.5
+    image: amir20/dozzle:v9.0.1
     container_name: dozzle
     volumes:
       # kics-scan ignore-line
@@ -18,7 +18,7 @@ services:
       - no-new-privileges:true
 
   grafana:
-    image: grafana/grafana:11.5.2
+    image: grafana/grafana:12.3
     container_name: grafana
     volumes:
       # kics-scan ignore-line
@@ -51,7 +51,7 @@ services:
       - no-new-privileges:true
 
   home-assistant:
-    image: homeassistant/home-assistant:2025.2.5
+    image: homeassistant/home-assistant:2026.1.1
     container_name: home-assistant
     volumes:
       - ${HOME_ASSISTANT_CONFIGURATION_DIRECTORY}:/config
@@ -67,7 +67,7 @@ services:
       - no-new-privileges:true
 
   matterbridge:
-    image: luligu/matterbridge:3.4.6
+    image: luligu/matterbridge:3.4.7
     container_name: matterbridge
     volumes:
       - ../home-server-configuration/Matterbridge:/root/Matterbridge
@@ -87,7 +87,7 @@ services:
       - no-new-privileges:true
 
   mosquitto:
-    image: eclipse-mosquitto:2.0.20
+    image: eclipse-mosquitto:2.0.22
     container_name: mosquitto
     volumes:
       - ../home-server-configuration/mosquitto/certs:/etc/mosquitto/certs
@@ -108,7 +108,7 @@ services:
       - no-new-privileges:true
 
   node-exporter:
-    image: prom/node-exporter:v1.9.0
+    image: prom/node-exporter:v1.10.2
     container_name: node-exporter
     volumes:
       # kics-scan ignore-line
@@ -144,7 +144,7 @@ services:
     restart: unless-stopped
     # kics-scan ignore-line
     cap_add:
-      - net_admin
+      - NET_ADMIN
       - SETGID
       - SETUID
     cap_drop:
@@ -194,7 +194,7 @@ services:
       - no-new-privileges:true
 
   prometheus:
-    image: prom/prometheus:v3.2.1
+    image: prom/prometheus:v3.9.1
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -225,7 +225,7 @@ services:
       - no-new-privileges:true
 
   zigbee2mqtt:
-    image: koenkk/zigbee2mqtt:2.1.1
+    image: koenkk/zigbee2mqtt:2.7.1
     container_name: zigbee2mqtt
     volumes:
       - ../home-server-configuration/zigbee2mqtt:/app/data
