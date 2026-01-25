@@ -101,7 +101,7 @@ services:
     ports:
       - '1883:1883'
     restart: unless-stopped
-    user: 1000:1000
+    user: 999:989
     cap_drop:
       - ALL
     security_opt:
@@ -234,7 +234,7 @@ services:
     ports:
       - '${HOST_IP}:8080:8080'
     restart: unless-stopped
-    user: 1000:1000
+    user: 999:989
     cap_drop:
       - ALL
     devices:
