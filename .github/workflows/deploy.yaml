@@ -38,4 +38,4 @@ jobs:
           username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          script: ls -la
+          script: /opt/github-deploy/home-server-configuration/start.sh
