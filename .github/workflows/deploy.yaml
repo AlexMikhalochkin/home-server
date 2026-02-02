@@ -30,3 +30,12 @@ jobs:
           audience: ${{ secrets.TS_AUDIENCE }}
           tags: ${{ vars.TAILSCALE_TAG }}
           ping: ${{ vars.TAILSCALE_TARGET_HOST }}
+
+      - name: SSH and run command
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.TAILSCALE_TARGET_HOST }}
+          username: ${{ vars.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: ls -la
