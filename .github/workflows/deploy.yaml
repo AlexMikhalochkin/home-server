@@ -12,6 +12,11 @@ on:
           - jack
           - newton
         default: chris
+      branch:
+        description: 'Branch to deploy (optional)'
+        required: false
+        type: string
+        default: main
 
 permissions:
   id-token: write
@@ -38,4 +43,4 @@ jobs:
           username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          script: /opt/github-deploy/home-server-configuration/start.sh
+          script: /opt/github-deploy/home-server-configuration/start.sh ${{ inputs.branch || 'main' }}
