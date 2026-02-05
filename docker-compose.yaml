@@ -66,6 +66,35 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  jellyfin:
+    image: jellyfin/jellyfin:10.11.5
+    container_name: jellyfin
+    volumes:
+      # kics-scan ignore-line
+      - jellyfin-config:/config
+      # kics-scan ignore-line
+      - jellyfin-cache:/cache
+      # kics-scan ignore-line
+      - ${PLEX_CONTENT_DIRECTORY}/content:/media:ro
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TIMEZONE}
+    network_mode: "service:openvpn"
+    restart: unless-stopped
+    # kics-scan ignore-line
+    cap_add:
+      - SETUID
+      - SETGID
+      - CHOWN
+    cap_drop:
+      - ALL
+    # kics-scan ignore-line
+    devices:
+      - /dev/dri:/dev/dri
+    security_opt:
+      - no-new-privileges:true
+
   matterbridge:
     image: luligu/matterbridge:3.4.7
     container_name: matterbridge
@@ -101,7 +130,7 @@ services:
     ports:
       - '1883:1883'
     restart: unless-stopped
-    user: 1000:1000
+    user: 999:989
     cap_drop:
       - ALL
     security_opt:
@@ -138,6 +167,8 @@ services:
       - PGID=100
       - TZ=${TIMEZONE}
     ports:
+      - '7359:7359/udp'
+      - '8096:8096'
       - '8123:8123'
     extra_hosts:
       - host.docker.internal:host-gateway
@@ -234,7 +265,7 @@ services:
     ports:
       - '${HOST_IP}:8080:8080'
     restart: unless-stopped
-    user: 1000:1000
+    user: 999:989
     cap_drop:
       - ALL
     devices:
@@ -280,6 +311,8 @@ services:
 
 volumes:
   grafana-data:
+  jellyfin-cache:
+  jellyfin-config:
   prometheus-data:
   data:
   media:
