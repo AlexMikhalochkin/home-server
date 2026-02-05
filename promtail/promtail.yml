@@ -1,0 +1,39 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /positions/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker
+          __path__: /var/lib/docker/containers/*/*-json.log
+    pipeline_stages:
+      # Parse the JSON from Docker log driver and keep only the log field
+      - docker: {}
+      - labels:
+          stream:
+      # Extract container_id from filename path
+      - regex:
+          expression: ".*/(?P<container_id>[0-9a-f]{64})-json\\.log$"
+          source: filename
+      # Strip ANSI color codes if present
+      - replace:
+          expression: "\x1b\[[0-9;]*[A-Za-z]"
+          replace: ""
+
+  # Optional: read classic syslog-style files (comment out if not needed)
+  - job_name: varlogs
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: varlogs
+          __path__: /var/log/*.log
