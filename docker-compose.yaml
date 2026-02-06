@@ -31,6 +31,10 @@ services:
     ports:
       - '${HOST_IP}:3000:3000'
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.home`)"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     healthcheck:
       test:
         [
