@@ -255,6 +255,34 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  traefik:
+    image: traefik:v3.6
+    container_name: traefik
+    volumes:
+      # kics-scan ignore-line
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+    # kics-scan ignore-line
+    ports:
+      # kics-scan ignore-line
+      - '${HOST_IP}:80:80'
+      # kics-scan ignore-line
+      - '${HOST_IP}:8082:8080'
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.home`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+    # kics-scan ignore-line
+    cap_add:
+      - NET_BIND_SERVICE
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:2.7.1
     container_name: zigbee2mqtt

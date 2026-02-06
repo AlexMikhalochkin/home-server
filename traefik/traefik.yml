@@ -1,0 +1,17 @@
+api:
+  dashboard: true
+  # insecure: true is intentional for LAN-only access
+  # Dashboard is only accessible on internal network (traefik.home hostname)
+  # For production/public deployments, implement proper authentication
+  insecure: true
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    exposedByDefault: false
+
+metrics:
+  prometheus: {}
