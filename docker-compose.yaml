@@ -45,6 +45,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.home`)"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     cap_drop:
       - ALL
     security_opt:
