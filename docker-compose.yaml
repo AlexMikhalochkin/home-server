@@ -18,7 +18,7 @@ services:
       - no-new-privileges:true
 
   grafana:
-    image: grafana/grafana:12.3
+    image: grafana/grafana:12.3.0
     container_name: grafana
     volumes:
       # kics-scan ignore-line
@@ -244,7 +244,7 @@ services:
       - no-new-privileges:true
 
   traefik:
-    image: traefik:v3.6
+    image: traefik:v3.6.0
     container_name: traefik
     volumes:
       # kics-scan ignore-line
