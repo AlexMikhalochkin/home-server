@@ -1,2 +1,11 @@
 /.idea
 .env
+
+# Ansible — machine-specific connection overrides
+ansible/bootstrap/inventory/host_vars/*/local.yml
+ansible/**/local.yml
+!ansible/**/*.example
+
+# Ansible Vault password file (local convenience)
+ansible/.vault-pass
+.vault-pass

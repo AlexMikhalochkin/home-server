@@ -1,0 +1,13 @@
+---
+# Placeholder for GitHub Actions — Docker, Samba, patching, users, etc.
+- name: Home server configuration (GitHub Actions)
+  hosts: home_servers
+  gather_facts: true
+
+  tasks:
+    - name: Not implemented yet
+      ansible.builtin.debug:
+        msg: >-
+          This playbook will configure the host from GitHub Actions after
+          Tailscale bootstrap. Pass ansible_host at runtime with the server's
+          Tailscale IP (e.g. -e ansible_host=100.x.x.x).

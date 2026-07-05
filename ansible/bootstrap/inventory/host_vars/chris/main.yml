@@ -1,0 +1,4 @@
+---
+# Label for this server in the Tailscale admin console only (--hostname=chris).
+# Ansible and SSH never use this for connection — use ansible_host (IP) in local.yml.
+tailscale_hostname: chris

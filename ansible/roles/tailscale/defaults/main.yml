@@ -1,0 +1,12 @@
+---
+# Name shown in the Tailscale admin console
+tailscale_hostname: "{{ inventory_hostname }}"
+
+# Set in ansible/vault/secrets.yml (encrypted)
+tailscale_authkey: ""
+
+# Extra flags passed to `tailscale up` (optional)
+tailscale_up_args: ""
+
+# Official install script
+tailscale_install_url: "https://tailscale.com/install.sh"

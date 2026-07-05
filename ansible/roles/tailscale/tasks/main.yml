@@ -1,0 +1,70 @@
+---
+- name: Assert Tailscale auth key is provided
+  ansible.builtin.assert:
+    that:
+      - tailscale_authkey | length > 0
+    fail_msg: >-
+      tailscale_authkey is missing. Create ansible/vault/secrets.yml with
+      ansible-vault and set tailscale_authkey to your Tailscale auth key.
+  become: false
+
+- name: Install Tailscale
+  ansible.builtin.shell: "curl -fsSL {{ tailscale_install_url }} | sh"
+  args:
+    creates: /usr/bin/tailscale
+
+- name: Enable and start tailscaled
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+
+- name: Check Tailscale backend state
+  ansible.builtin.command: tailscale status --json
+  register: tailscale_status_json
+  changed_when: false
+  failed_when: false
+
+- name: Parse Tailscale backend state
+  ansible.builtin.set_fact:
+    tailscale_backend_state: >-
+      {{
+        (tailscale_status_json.stdout | from_json).BackendState
+        if tailscale_status_json.rc == 0
+        else 'NeedsLogin'
+      }}
+  become: false
+
+- name: Join Tailscale tailnet
+  ansible.builtin.command:
+    cmd: >-
+      tailscale up
+      --auth-key={{ tailscale_authkey }}
+      --hostname={{ tailscale_hostname }}
+      {{ tailscale_up_args }}
+  register: tailscale_up_result
+  changed_when: true
+  no_log: true
+  when: tailscale_backend_state != "Running"
+
+- name: Verify Tailscale is running
+  ansible.builtin.command: tailscale status
+  register: tailscale_verify
+  changed_when: false
+
+- name: Show Tailscale status
+  ansible.builtin.debug:
+    msg: "{{ tailscale_verify.stdout_lines }}"
+  become: false
+
+- name: Show Tailscale IPv4 address
+  ansible.builtin.command: tailscale ip -4
+  register: tailscale_ipv4
+  changed_when: false
+
+- name: Tailscale IP for GitHub configuration
+  ansible.builtin.debug:
+    msg: >-
+      Add this Tailscale IP to your GitHub environment variable
+      (e.g. CHRIS_TAILSCALE_IP): {{ tailscale_ipv4.stdout | trim }}
+  become: false
