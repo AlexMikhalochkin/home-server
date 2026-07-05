@@ -197,7 +197,7 @@ services:
     tty: true
 
   plex:
-    image: linuxserver/plex:1.42.2
+    image: linuxserver/plex:1.43.2
     container_name: plex
     volumes:
       - ${PLEX_CONFIG_DIRECTORY}/config:/config
