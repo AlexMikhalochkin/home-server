@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BRANCH="${1:-{{ deploy_branch }}}"
+BASE="{{ deploy_base_dir }}"
+PROFILE_ARGS=({% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %})
+HOME_SERVER_DIR="${BASE}/home-server"
+HOME_SERVER_CONFIGURATION_DIR="${BASE}/home-server-configuration"
+PRIVATE_HOME_SERVER_DIR="${BASE}/private-home-server"
+
+# Switch a repo to $BRANCH if it exists on origin, otherwise fall back to main.
+# Args: $1 = repo path, $2 = required (1 = exit if $BRANCH is missing and not main)
+switch_repo() {
+    repo_path="$1"
+    required="$2"
+
+    cd "${repo_path}"
+    git restore .
+    git fetch origin
+
+    if git ls-remote --heads origin "${BRANCH}" | grep -q "${BRANCH}"; then
+        git checkout -B "${BRANCH}" "origin/${BRANCH}"
+        echo "${repo_path}: switched to ${BRANCH}"
+    else
+        if [ "${required}" = "1" ] && [ "${BRANCH}" != "main" ]; then
+            echo "ERROR: branch '${BRANCH}' not found in ${repo_path} (required)"
+            exit 1
+        fi
+        git checkout -B main origin/main
+        echo "${repo_path}: using main (branch '${BRANCH}' not found)"
+    fi
+}
+
+switch_repo "${HOME_SERVER_CONFIGURATION_DIR}" 0
+switch_repo "${PRIVATE_HOME_SERVER_DIR}" 0
+switch_repo "${HOME_SERVER_DIR}" 1
+
+echo "Starting stack..."
+cd "${HOME_SERVER_DIR}"
+docker compose \
+  -f "${HOME_SERVER_DIR}/docker-compose.yaml" \
+  -f "${PRIVATE_HOME_SERVER_DIR}/docker-compose.yaml" \
+  --env-file "${HOME_SERVER_DIR}/.env" \
+  "${PROFILE_ARGS[@]}" \
+  pull
+docker compose \
+  -f "${HOME_SERVER_DIR}/docker-compose.yaml" \
+  -f "${PRIVATE_HOME_SERVER_DIR}/docker-compose.yaml" \
+  --env-file "${HOME_SERVER_DIR}/.env" \
+  "${PROFILE_ARGS[@]}" \
+  up -d --remove-orphans
+docker image prune -a -f

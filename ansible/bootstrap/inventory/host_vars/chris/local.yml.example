@@ -1,0 +1,17 @@
+---
+# Copy this file to local.yml and adjust values for your network.
+# local.yml is gitignored and never committed.
+#
+#   cp local.yml.example local.yml
+
+# How Ansible reaches the server over SSH (LAN IP today, Tailscale IP from GitHub later).
+# This is the only address used for connection — there is no DNS or Tailscale hostname involved.
+ansible_host: 192.168.1.100
+
+# SSH user (required)
+ansible_user: youruser
+
+# Optional — if omitted, pass --ask-pass and --ask-become-pass when running the playbook
+# Use quotes so numeric passwords are treated as strings.
+# ansible_password: "your_ssh_password"
+# ansible_become_password: "your_sudo_password"

@@ -1,0 +1,4 @@
+---
+# Ubuntu 24.10+ defaults to sudo-rs, which does not work with Ansible become.
+# Use the classic sudo binary until Ansible supports sudo-rs.
+ansible_become_exe: /usr/bin/sudo.ws

@@ -1,0 +1,41 @@
+---
+# Non-secret configuration for the chris Docker stack
+
+docker_compose_profile: chris
+deploy_user: github
+deploy_branch: main
+
+timezone: Europe/Berlin
+
+docker_users:
+  - github
+
+# Public half of the GitHub Actions deploy keypair (private half is the SSH_PRIVATE_KEY
+# GitHub Actions secret on the chris environment). Generate with:
+#   ssh-keygen -t ed25519 -f gh_actions_chris -N ""
+github_ci_ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICkxEh2AMyiTtG61MB2qz7tm/+FLGiOKzD2cFkwzKqxg gh-actions-chris"
+
+samba_enabled: true
+samba_share_path: /media/disk/sambashare
+samba_user: alex
+samba_create_user: false
+
+# Second disk migrated from the old server (Seagate ST1000LM024, serial S30YJ9HG320291,
+# ext4, 908G of existing media data — do NOT reformat it). Flip media_disk_enabled to true
+# once the drive is physically attached to this host, then re-run site.yml.
+media_disk_enabled: false
+media_disk_source: /dev/disk/by-uuid/b64016e5-92cb-40a8-93c9-a2bc59893cf1
+media_disk_mount_point: /media/disk
+media_disk_format: false
+
+# zigbee2mqtt needs its USB Zigbee coordinator (/dev/ttyUSB0) physically moved from the old
+# server too. Flip to true once it's plugged into this host, then re-run site.yml — until
+# then it's simply not part of the stack (its own compose profile, not started with `chris`).
+zigbee_enabled: false
+
+stack_env:
+  HOME_ASSISTANT_CONFIGURATION_DIRECTORY: /opt/github-deploy/homeassistant/config
+  PLEX_CONFIG_DIRECTORY: /opt/github-deploy/plex
+  PLEX_CONTENT_DIRECTORY: /media/disk/sambashare
+  TIMEZONE: Europe/Berlin
+  HOST_IP: "0.0.0.0"

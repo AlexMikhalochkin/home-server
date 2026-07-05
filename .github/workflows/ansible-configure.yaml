@@ -1,0 +1,72 @@
+name: Ansible Configure
+
+# One-button full host configuration, run after the (one-time, LAN-only) Tailscale
+# bootstrap. Installs/updates everything: OS packages, Docker, Samba, the "github" deploy
+# user, and the Docker stack itself. Safe to re-run any time — every role is idempotent.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to configure'
+        required: true
+        type: choice
+        options:
+          - chris
+          - jack
+          - newton
+        default: chris
+      branch:
+        description: 'home-server / home-server-configuration / private-home-server branch to deploy'
+        required: false
+        type: string
+        default: main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: ${{ vars.TAILSCALE_TAG }}
+          ping: ${{ vars.TAILSCALE_TARGET_HOST }}
+
+      - name: Install Ansible
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install "ansible-core>=2.16"
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Write SSH private key
+        run: |
+          install -m 600 -D /dev/null "${RUNNER_TEMP}/ssh_key"
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > "${RUNNER_TEMP}/ssh_key"
+
+      - name: Write vault password
+        run: |
+          install -m 600 -D /dev/null "${RUNNER_TEMP}/vault_pass"
+          printf '%s' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > "${RUNNER_TEMP}/vault_pass"
+
+      - name: Run site.yml
+        working-directory: ansible/github
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          ansible-playbook playbooks/site.yml \
+            -e ansible_host="${{ vars.TAILSCALE_TARGET_HOST }}" \
+            -e ansible_user="${{ vars.ADMIN_SSH_USER }}" \
+            -e ansible_ssh_private_key_file="${RUNNER_TEMP}/ssh_key" \
+            -e ansible_become_password="${{ secrets.ANSIBLE_BECOME_PASSWORD }}" \
+            -e deploy_branch="${{ inputs.branch || 'main' }}" \
+            --vault-password-file "${RUNNER_TEMP}/vault_pass"

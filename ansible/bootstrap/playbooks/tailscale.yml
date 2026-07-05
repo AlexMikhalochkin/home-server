@@ -1,0 +1,37 @@
+---
+- name: Validate bootstrap configuration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Require ansible_host (IP address) for each target host
+      ansible.builtin.assert:
+        that:
+          - hostvars[item].ansible_host is defined
+          - hostvars[item].ansible_host | length > 0
+          - hostvars[item].ansible_host != item
+        fail_msg: >-
+          ansible_host (IP address) is not set for '{{ item }}'.
+          Copy inventory/host_vars/{{ item }}/local.yml.example to
+          inventory/host_vars/{{ item }}/local.yml and set your server's IP.
+          Also make sure you run the playbook from the ansible/bootstrap/ directory.
+      loop: "{{ groups['home_servers'] | default([]) }}"
+
+- name: Install and configure Tailscale
+  hosts: home_servers
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Load encrypted secrets
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../../vault/secrets.yml"
+      become: false
+
+  roles:
+    - tailscale
+    - role: ssh_ci_access
+      vars:
+        ssh_ci_access_user: "{{ ansible_user }}"
+        ssh_ci_access_public_key: "{{ github_ci_ssh_public_key | default('') }}"

@@ -1,0 +1,16 @@
+---
+# Dedicated, unprivileged system account used for GitHub Actions deploys.
+# uid/gid are left for the OS to allocate (see tasks/main.yml) rather than pinned to fixed
+# numbers — a fixed system uid/gid (e.g. 999:989) can already be taken by unrelated system
+# accounts on a different OS image/release (observed: systemd-journal/_chrony on Ubuntu
+# 26.04), which would break user creation on every fresh install. The resolved uid/gid is
+# fed into docker-compose.yaml via DEPLOY_UID/DEPLOY_GID so bind-mounted container data
+# (mosquitto, zigbee2mqtt) stays owned by whatever this user actually ends up being.
+deploy_user: github
+# Kept in sync with docker_stack's deploy_base_dir default (/opt/github-deploy).
+deploy_user_home: /opt/github-deploy
+deploy_user_shell: /bin/bash
+
+# Public half of the keypair GitHub Actions uses to SSH in as deploy_user.
+# Not secret — set the matching private key as the SSH_PRIVATE_KEY GitHub secret.
+github_ci_ssh_public_key: ""

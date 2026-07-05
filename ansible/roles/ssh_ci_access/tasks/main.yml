@@ -1,0 +1,28 @@
+---
+# Intentionally non-fatal when the key isn't set yet: bootstrap must still succeed with
+# only Tailscale installed if the GitHub Actions keypair hasn't been generated yet.
+- name: Skip SSH CI access setup (no public key configured yet)
+  ansible.builtin.debug:
+    msg: >-
+      ssh_ci_access_public_key is empty — skipping. Set it once you've generated the
+      GitHub Actions deploy keypair to let CI connect as {{ ssh_ci_access_user }}.
+  when: ssh_ci_access_public_key | default('') | length == 0
+
+- name: Ensure .ssh directory exists
+  ansible.builtin.file:
+    path: "{{ ssh_ci_access_home }}/.ssh"
+    state: directory
+    owner: "{{ ssh_ci_access_user }}"
+    group: "{{ ssh_ci_access_user }}"
+    mode: "0700"
+  when: ssh_ci_access_public_key | default('') | length > 0
+
+- name: Install GitHub Actions CI public key
+  ansible.builtin.lineinfile:
+    path: "{{ ssh_ci_access_home }}/.ssh/authorized_keys"
+    line: "{{ ssh_ci_access_public_key }}"
+    create: true
+    owner: "{{ ssh_ci_access_user }}"
+    group: "{{ ssh_ci_access_user }}"
+    mode: "0600"
+  when: ssh_ci_access_public_key | default('') | length > 0

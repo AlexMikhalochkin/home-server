@@ -1,0 +1,59 @@
+---
+- name: Create deploy group (let the OS pick a free system gid)
+  ansible.builtin.group:
+    name: "{{ deploy_user }}"
+    state: present
+    system: true
+
+- name: Create deploy system user (let the OS pick a free system uid)
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    home: "{{ deploy_user_home }}"
+    shell: "{{ deploy_user_shell }}"
+    system: true
+    create_home: true
+
+- name: Look up the resolved uid/gid for the deploy user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ deploy_user }}"
+
+- name: Expose deploy user uid/gid to other roles (used for DEPLOY_UID/DEPLOY_GID in .env)
+  ansible.builtin.set_fact:
+    deploy_user_uid: "{{ getent_passwd[deploy_user][1] }}"
+    deploy_user_gid: "{{ getent_passwd[deploy_user][2] }}"
+
+- name: Require GitHub Actions SSH public key
+  ansible.builtin.assert:
+    that:
+      - github_ci_ssh_public_key is defined
+      - github_ci_ssh_public_key | length > 0
+    fail_msg: >-
+      github_ci_ssh_public_key is not set for '{{ inventory_hostname }}'. Generate an
+      ed25519 keypair, put the public key in inventory/host_vars/{{ inventory_hostname }}/main.yml,
+      and add the private key as the SSH_PRIVATE_KEY secret in GitHub Actions.
+
+- name: Ensure deploy user .ssh directory exists
+  ansible.builtin.file:
+    path: "{{ deploy_user_home }}/.ssh"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0700"
+
+- name: Install GitHub Actions authorized key
+  ansible.builtin.copy:
+    content: "{{ github_ci_ssh_public_key }}\n"
+    dest: "{{ deploy_user_home }}/.ssh/authorized_keys"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+
+- name: Fix ownership of anything already deployed as another user
+  ansible.builtin.file:
+    path: "{{ deploy_user_home }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    recurse: true

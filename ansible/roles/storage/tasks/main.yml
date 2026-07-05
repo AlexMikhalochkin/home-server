@@ -1,0 +1,51 @@
+---
+- name: Require a media_disk_source when storage is enabled
+  ansible.builtin.assert:
+    that:
+      - media_disk_source is defined
+      - media_disk_source | length > 0
+    fail_msg: >-
+      media_disk_enabled is true but media_disk_source is empty. Set it to a stable device
+      path such as /dev/disk/by-uuid/<uuid> in inventory/host_vars/{{ inventory_hostname }}/main.yml.
+
+- name: Check whether the device is already present
+  ansible.builtin.stat:
+    path: "{{ media_disk_source }}"
+  register: media_disk_stat
+
+- name: Fail if the device path does not exist yet
+  ansible.builtin.assert:
+    that:
+      - media_disk_stat.stat.exists
+    fail_msg: >-
+      {{ media_disk_source }} does not exist on this host. Make sure the disk is physically
+      attached (and its UUID/serial in media_disk_source still matches) before enabling
+      media_disk_enabled.
+
+- name: Detect existing filesystem on the device
+  ansible.builtin.command: "blkid -o value -s TYPE {{ media_disk_source }}"
+  register: media_disk_blkid
+  changed_when: false
+  failed_when: false
+
+- name: Create filesystem only if explicitly requested and none exists yet
+  community.general.filesystem:
+    dev: "{{ media_disk_source }}"
+    fstype: "{{ media_disk_fstype }}"
+  when:
+    - media_disk_format | bool
+    - media_disk_blkid.stdout | trim | length == 0
+
+- name: Ensure mount point directory exists
+  ansible.builtin.file:
+    path: "{{ media_disk_mount_point }}"
+    state: directory
+    mode: "0755"
+
+- name: Mount the media disk and persist it in fstab
+  ansible.posix.mount:
+    path: "{{ media_disk_mount_point }}"
+    src: "{{ media_disk_source }}"
+    fstype: "{{ media_disk_fstype }}"
+    opts: "{{ media_disk_mount_opts }}"
+    state: mounted

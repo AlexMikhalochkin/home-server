@@ -1,0 +1,54 @@
+---
+- name: Install Samba
+  ansible.builtin.apt:
+    name: samba
+    state: present
+    update_cache: true
+
+- name: Create media group
+  ansible.builtin.group:
+    name: "{{ samba_user }}"
+    gid: "{{ samba_user_gid }}"
+  when: samba_create_user
+
+- name: Create Samba user account
+  ansible.builtin.user:
+    name: "{{ samba_user }}"
+    uid: "{{ samba_user_uid }}"
+    group: "{{ samba_user }}"
+    create_home: false
+    shell: /usr/sbin/nologin
+  when: samba_create_user
+
+- name: Create Samba share directory
+  ansible.builtin.file:
+    path: "{{ samba_share_path }}"
+    state: directory
+    owner: "{{ samba_user_uid }}"
+    group: "{{ samba_user_gid }}"
+    mode: "0775"
+
+- name: Configure Samba
+  ansible.builtin.template:
+    src: smb.conf.j2
+    dest: /etc/samba/smb.conf
+    mode: "0644"
+  notify: Restart samba
+
+- name: Set Samba user password
+  ansible.builtin.shell: |
+    set -o pipefail
+    printf '%s\n%s\n' "{{ samba_password }}" "{{ samba_password }}" | smbpasswd -a -s "{{ samba_user }}"
+  args:
+    executable: /bin/bash
+  no_log: true
+  when:
+    - samba_password is defined
+    - samba_password | length > 0
+  changed_when: true
+
+- name: Enable and start Samba
+  ansible.builtin.systemd:
+    name: smbd
+    enabled: true
+    state: started

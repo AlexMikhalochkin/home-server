@@ -1,0 +1,14 @@
+---
+common_upgrade_packages: true
+common_packages:
+  - ca-certificates
+  - curl
+  - git
+  - gnupg
+  - python3
+  - apt-transport-https
+  # Lets Ansible use setfacl (instead of a broken chmod-ACL fallback on some sudo shims)
+  # to hand temp files to an unprivileged become_user, e.g. `become_user: github` tasks.
+  - acl
+
+timezone: UTC
