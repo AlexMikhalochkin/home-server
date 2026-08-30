@@ -55,12 +55,14 @@
         User git
         IdentityFile {{ deploy_base_dir }}/.ssh/id_ed25519_home_server_configuration
         IdentitiesOnly yes
+        StrictHostKeyChecking accept-new
 
       Host {{ private_home_server_ssh_host_alias }}
         HostName github.com
         User git
         IdentityFile {{ deploy_base_dir }}/.ssh/id_ed25519_private_home_server
         IdentitiesOnly yes
+        StrictHostKeyChecking accept-new
 
 - name: Clone or update home-server repository (public, HTTPS)
   ansible.builtin.git:
