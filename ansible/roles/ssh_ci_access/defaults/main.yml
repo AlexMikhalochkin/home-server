@@ -1,0 +1,11 @@
+---
+# Generic "install a GitHub Actions CI public key for this user" role. Used by the
+# bootstrap playbook to give the full ansible/github/playbooks/site.yml run a way in as an
+# admin (sudo-capable) user on a freshly-reinstalled box, before the "github" deploy user
+# (created later, by roles/deploy_user) exists at all.
+ssh_ci_access_user: ""
+ssh_ci_access_home: "/home/{{ ssh_ci_access_user }}"
+
+# Same value as deploy_user's github_ci_ssh_public_key — one keypair, reused for both the
+# admin user (full configure) and the restricted deploy user (fast redeploy). Not secret.
+ssh_ci_access_public_key: ""

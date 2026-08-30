@@ -1,0 +1,17 @@
+---
+# Copy to local.yml — gitignored, never committed.
+#
+#   cp local.yml.example local.yml
+
+# Tailscale IP (or LAN IP when at home) — required for SSH
+ansible_host: 100.91.97.86
+ansible_user: alex
+
+# Optional — if omitted, use --ask-pass / --ask-become-pass
+# ansible_password: "your_ssh_password"
+# ansible_become_password: "your_sudo_password"
+
+# Optional overrides for this host (uncomment to use)
+# stack_env:
+#   HOST_IP: "192.168.100.116"
+# deploy_branch: ansible

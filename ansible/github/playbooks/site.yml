@@ -1,13 +1,44 @@
 ---
-# Placeholder for GitHub Actions — Docker, Samba, patching, users, etc.
-- name: Home server configuration (GitHub Actions)
-  hosts: home_servers
-  gather_facts: true
+- name: Validate configuration
+  hosts: localhost
+  connection: local
+  gather_facts: false
 
   tasks:
-    - name: Not implemented yet
-      ansible.builtin.debug:
-        msg: >-
-          This playbook will configure the host from GitHub Actions after
-          Tailscale bootstrap. Pass ansible_host at runtime with the server's
-          Tailscale IP (e.g. -e ansible_host=100.x.x.x).
+    - name: Require ansible_host (IP address) for each target host
+      ansible.builtin.assert:
+        that:
+          - hostvars[item].ansible_host is defined
+          - hostvars[item].ansible_host | length > 0
+          - hostvars[item].ansible_host != item
+        fail_msg: >-
+          ansible_host is not set for '{{ item }}'.
+          Pass -e ansible_host=100.x.x.x or create inventory/host_vars/{{ item }}/local.yml.
+      loop: "{{ groups['home_servers'] | default([]) }}"
+
+- name: Configure home server for Docker stack
+  hosts: home_servers
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Load encrypted secrets
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../../vault/secrets.yml"
+      become: false
+
+  roles:
+    - role: common
+      tags: [common]
+    - role: deploy_user
+      tags: [deploy_user]
+    - role: docker
+      tags: [docker]
+    - role: storage
+      tags: [storage]
+      when: media_disk_enabled | bool
+    - role: samba
+      tags: [samba]
+      when: samba_enabled | bool
+    - role: docker_stack
+      tags: [stack]

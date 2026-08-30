@@ -1,0 +1,10 @@
+---
+samba_enabled: false
+samba_workgroup: WORKGROUP
+samba_share_name: sambashare
+samba_share_path: /media/disk/sambashare
+samba_share_comment: Media
+samba_create_user: false
+samba_user: media
+samba_user_uid: 1000
+samba_user_gid: 1000

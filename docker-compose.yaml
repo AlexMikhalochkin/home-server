@@ -131,7 +131,7 @@ services:
     ports:
       - '1883:1883'
     restart: unless-stopped
-    user: 999:989
+    user: "${DEPLOY_UID:-999}:${DEPLOY_GID:-989}"
     cap_drop:
       - ALL
     profiles: [ chris, newton, local ]
@@ -292,7 +292,7 @@ services:
     ports:
       - '${HOST_IP}:8080:8080'
     restart: unless-stopped
-    user: 999:989
+    user: "${DEPLOY_UID:-999}:${DEPLOY_GID:-989}"
     cap_drop:
       - ALL
     devices:

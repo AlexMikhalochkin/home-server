@@ -1,0 +1,160 @@
+---
+- name: Require GitHub deploy keys for private configuration repositories
+  ansible.builtin.assert:
+    that:
+      - github_clone_ssh_key_home_server_configuration is defined
+      - github_clone_ssh_key_home_server_configuration | length > 0
+      - github_clone_ssh_key_private_home_server is defined
+      - github_clone_ssh_key_private_home_server | length > 0
+    fail_msg: >-
+      home-server-configuration and private-home-server are private repos. Add
+      github_clone_ssh_key_home_server_configuration and github_clone_ssh_key_private_home_server
+      to ansible/vault/secrets.yml (one deploy key per repo, each with read-only access).
+
+- name: Create deploy base directory
+  ansible.builtin.file:
+    path: "{{ deploy_base_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"
+
+- name: Ensure deploy user .ssh directory exists
+  ansible.builtin.file:
+    path: "{{ deploy_base_dir }}/.ssh"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0700"
+
+- name: Install GitHub deploy SSH keys
+  ansible.builtin.copy:
+    content: "{{ item.key }}\n"
+    dest: "{{ deploy_base_dir }}/.ssh/{{ item.file }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+  loop:
+    - { file: id_ed25519_home_server_configuration, key: "{{ github_clone_ssh_key_home_server_configuration }}" }
+    - { file: id_ed25519_private_home_server, key: "{{ github_clone_ssh_key_private_home_server }}" }
+  loop_control:
+    label: "{{ item.file }}"
+  no_log: true
+
+- name: Configure SSH host aliases for the GitHub deploy keys
+  ansible.builtin.blockinfile:
+    path: "{{ deploy_base_dir }}/.ssh/config"
+    create: true
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+    marker: "# {mark} ANSIBLE MANAGED github deploy keys"
+    block: |
+      Host {{ home_server_configuration_ssh_host_alias }}
+        HostName github.com
+        User git
+        IdentityFile {{ deploy_base_dir }}/.ssh/id_ed25519_home_server_configuration
+        IdentitiesOnly yes
+
+      Host {{ private_home_server_ssh_host_alias }}
+        HostName github.com
+        User git
+        IdentityFile {{ deploy_base_dir }}/.ssh/id_ed25519_private_home_server
+        IdentitiesOnly yes
+
+- name: Clone or update home-server repository (public, HTTPS)
+  ansible.builtin.git:
+    repo: "{{ home_server_repo }}"
+    dest: "{{ home_server_dir }}"
+    version: "{{ deploy_branch }}"
+    update: true
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Clone or update home-server-configuration repository (private)
+  ansible.builtin.git:
+    repo: "{{ home_server_configuration_repo_ssh }}"
+    dest: "{{ home_server_configuration_dir }}"
+    version: "{{ deploy_branch }}"
+    accept_hostkey: "{{ git_clone_accept_hostkey }}"
+    update: true
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Clone or update private-home-server repository (private, adds qbittorrent)
+  ansible.builtin.git:
+    repo: "{{ private_home_server_repo_ssh }}"
+    dest: "{{ private_home_server_dir }}"
+    version: "{{ deploy_branch }}"
+    accept_hostkey: "{{ git_clone_accept_hostkey }}"
+    update: true
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Create stack data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"
+  loop: "{{ stack_directories }}"
+
+- name: Render Docker Compose environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ home_server_dir }}/.env"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0640"
+
+- name: Install deploy start script
+  ansible.builtin.template:
+    src: start.sh.j2
+    dest: "{{ home_server_configuration_dir }}/start.sh"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"
+
+- name: Pull Docker images
+  ansible.builtin.command:
+    cmd: >-
+      docker compose
+      -f {{ home_server_dir }}/docker-compose.yaml
+      -f {{ private_home_server_dir }}/docker-compose.yaml
+      --env-file {{ home_server_dir }}/.env
+      --profile {{ docker_compose_profile }}
+      pull
+    chdir: "{{ home_server_dir }}"
+  changed_when: true
+  when: docker_compose_pull
+
+- name: Start Docker stack
+  ansible.builtin.command:
+    cmd: >-
+      docker compose
+      -f {{ home_server_dir }}/docker-compose.yaml
+      -f {{ private_home_server_dir }}/docker-compose.yaml
+      --env-file {{ home_server_dir }}/.env
+      --profile {{ docker_compose_profile }}
+      up -d --remove-orphans
+    chdir: "{{ home_server_dir }}"
+  register: docker_compose_up_result
+  changed_when: docker_compose_up_result.rc == 0
+  when: docker_compose_up
+
+- name: Show running containers
+  ansible.builtin.command:
+    cmd: >-
+      docker compose
+      -f {{ home_server_dir }}/docker-compose.yaml
+      -f {{ private_home_server_dir }}/docker-compose.yaml
+      --profile {{ docker_compose_profile }}
+      ps
+    chdir: "{{ home_server_dir }}"
+  register: docker_compose_ps
+  changed_when: false
+
+- name: Docker stack status
+  ansible.builtin.debug:
+    msg: "{{ docker_compose_ps.stdout_lines }}"

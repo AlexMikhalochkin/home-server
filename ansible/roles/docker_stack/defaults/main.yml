@@ -1,0 +1,43 @@
+---
+deploy_base_dir: /opt/github-deploy
+deploy_user: "{{ ansible_user | default('alex') }}"
+deploy_branch: main
+
+# home-server is public — cloned over HTTPS, no deploy key needed.
+home_server_repo: "https://github.com/AlexMikhalochkin/home-server.git"
+home_server_dir: "{{ deploy_base_dir }}/home-server"
+
+# home-server-configuration and private-home-server are private. GitHub deploy keys are
+# repo-scoped, so each gets its own keypair + SSH host alias (mirrors the old server exactly).
+home_server_configuration_ssh_host_alias: github.com-home-server-configuration
+home_server_configuration_repo_ssh: "git@{{ home_server_configuration_ssh_host_alias }}:AlexMikhalochkin/home-server-configuration.git"
+home_server_configuration_dir: "{{ deploy_base_dir }}/home-server-configuration"
+
+private_home_server_ssh_host_alias: github.com-private-home-server
+private_home_server_repo_ssh: "git@{{ private_home_server_ssh_host_alias }}:AlexMikhalochkin/private-home-server.git"
+private_home_server_dir: "{{ deploy_base_dir }}/private-home-server"
+
+# Set in ansible/vault/secrets.yml (encrypted) — one per private repo.
+github_clone_ssh_key_home_server_configuration: ""
+github_clone_ssh_key_private_home_server: ""
+
+docker_compose_profile: chris
+docker_compose_pull: true
+docker_compose_up: true
+
+# Rendered to home-server/.env — override per host in inventory. Kept as siblings of
+# home-server (not nested inside it) so they're untouched by git operations on that repo.
+stack_env:
+  HOME_ASSISTANT_CONFIGURATION_DIRECTORY: "{{ deploy_base_dir }}/homeassistant/config"
+  PLEX_CONFIG_DIRECTORY: "{{ deploy_base_dir }}/plex"
+  PLEX_CONTENT_DIRECTORY: /media/disk/sambashare
+  TIMEZONE: "{{ timezone | default('UTC') }}"
+  HOST_IP: "0.0.0.0"
+
+stack_directories:
+  - "{{ stack_env.HOME_ASSISTANT_CONFIGURATION_DIRECTORY }}"
+  - "{{ stack_env.PLEX_CONFIG_DIRECTORY }}/config"
+  - "{{ stack_env.PLEX_CONTENT_DIRECTORY }}/content"
+  - "{{ stack_env.PLEX_CONTENT_DIRECTORY }}/downloads"
+
+git_clone_accept_hostkey: true

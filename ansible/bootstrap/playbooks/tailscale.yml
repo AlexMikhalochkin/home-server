@@ -18,13 +18,9 @@
           Also make sure you run the playbook from the ansible/bootstrap/ directory.
       loop: "{{ groups['home_servers'] | default([]) }}"
 
-- name: Bootstrap Tailscale on home server
-  hosts: home_servers
-  gather_facts: true
-
 - name: Install and configure Tailscale
   hosts: home_servers
-  gather_facts: false
+  gather_facts: true
   become: true
 
   pre_tasks:
@@ -35,3 +31,7 @@
 
   roles:
     - tailscale
+    - role: ssh_ci_access
+      vars:
+        ssh_ci_access_user: "{{ ansible_user }}"
+        ssh_ci_access_public_key: "{{ github_ci_ssh_public_key | default('') }}"

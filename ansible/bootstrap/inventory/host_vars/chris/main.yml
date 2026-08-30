@@ -2,3 +2,10 @@
 # Label for this server in the Tailscale admin console only (--hostname=chris).
 # Ansible and SSH never use this for connection — use ansible_host (IP) in local.yml.
 tailscale_hostname: chris
+
+# Public half of the GitHub Actions deploy keypair — installed for ansible_user (alex) so
+# the full ansible/github/playbooks/site.yml run can SSH in afterwards. Must match the
+# value in ansible/github/inventory/host_vars/chris/main.yml (same keypair, reused for both
+# the admin user here and the restricted "github" deploy user created later). Not secret —
+# leave empty to skip this step (bootstrap still succeeds, only Tailscale gets installed).
+github_ci_ssh_public_key: ""
