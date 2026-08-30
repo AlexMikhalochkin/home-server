@@ -34,6 +34,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required environment configuration
+        run: |
+          missing=()
+          [ -z "${{ vars.TAILSCALE_TARGET_HOST }}" ] && missing+=("vars.TAILSCALE_TARGET_HOST")
+          [ -z "${{ vars.ADMIN_SSH_USER }}" ] && missing+=("vars.ADMIN_SSH_USER")
+          [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ] && missing+=("secrets.SSH_PRIVATE_KEY")
+          [ -z "${{ secrets.ANSIBLE_BECOME_PASSWORD }}" ] && missing+=("secrets.ANSIBLE_BECOME_PASSWORD")
+          [ -z "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" ] && missing+=("secrets.ANSIBLE_VAULT_PASSWORD")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing required environment configuration for '${{ inputs.environment }}': ${missing[*]}"
+            echo "Set 'vars.*' entries under the Variables tab (not Secrets) and 'secrets.*' entries under the Secrets tab, both in Settings > Environments > ${{ inputs.environment }}."
+            exit 1
+          fi
+
       - name: Tailscale
         uses: tailscale/github-action@v4
         with:
