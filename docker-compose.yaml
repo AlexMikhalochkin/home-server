@@ -299,7 +299,7 @@ services:
       - /dev/ttyUSB0:/dev/ttyUSB0
     group_add:
       - dialout
-    profiles: [ chris ]
+    profiles: [ chris-zigbee ]
     security_opt:
       - no-new-privileges:true
 

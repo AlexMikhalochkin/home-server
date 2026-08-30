@@ -68,6 +68,10 @@
     dest: "{{ home_server_dir }}"
     version: "{{ deploy_branch }}"
     update: true
+    # Containers can write into bind-mounted files under these checkouts (zigbee2mqtt,
+    # matterbridge, home-assistant config). force=true discards those local modifications
+    # before pulling, matching the old start.sh script's explicit `git restore .` step.
+    force: true
   become: true
   become_user: "{{ deploy_user }}"
 
@@ -78,6 +82,7 @@
     version: "{{ deploy_branch }}"
     accept_hostkey: "{{ git_clone_accept_hostkey }}"
     update: true
+    force: true
   become: true
   become_user: "{{ deploy_user }}"
 
@@ -88,6 +93,7 @@
     version: "{{ deploy_branch }}"
     accept_hostkey: "{{ git_clone_accept_hostkey }}"
     update: true
+    force: true
   become: true
   become_user: "{{ deploy_user }}"
 
@@ -123,7 +129,7 @@
       -f {{ home_server_dir }}/docker-compose.yaml
       -f {{ private_home_server_dir }}/docker-compose.yaml
       --env-file {{ home_server_dir }}/.env
-      --profile {{ docker_compose_profile }}
+      {% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %}
       pull
     chdir: "{{ home_server_dir }}"
   changed_when: true
@@ -136,7 +142,7 @@
       -f {{ home_server_dir }}/docker-compose.yaml
       -f {{ private_home_server_dir }}/docker-compose.yaml
       --env-file {{ home_server_dir }}/.env
-      --profile {{ docker_compose_profile }}
+      {% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %}
       up -d --remove-orphans
     chdir: "{{ home_server_dir }}"
   register: docker_compose_up_result
@@ -149,7 +155,7 @@
       docker compose
       -f {{ home_server_dir }}/docker-compose.yaml
       -f {{ private_home_server_dir }}/docker-compose.yaml
-      --profile {{ docker_compose_profile }}
+      {% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %}
       ps
     chdir: "{{ home_server_dir }}"
   register: docker_compose_ps

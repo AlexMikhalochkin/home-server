@@ -25,6 +25,17 @@ docker_compose_profile: chris
 docker_compose_pull: true
 docker_compose_up: true
 
+# zigbee2mqtt needs a physical USB Zigbee coordinator (/dev/ttyUSB0). Like the media disk,
+# it's meant to be moved from the old server rather than replaced, and isn't attached yet.
+# A missing device makes `docker compose up` fail for the *entire* stack, not just this one
+# container — so it sits behind its own profile, only added to docker_compose_profiles once
+# zigbee_enabled is true (after the dongle is physically attached).
+zigbee_enabled: false
+zigbee_profile: chris-zigbee
+
+docker_compose_profiles: >-
+  {{ [docker_compose_profile] + ([zigbee_profile] if zigbee_enabled | bool else []) }}
+
 # Rendered to home-server/.env — override per host in inventory. Kept as siblings of
 # home-server (not nested inside it) so they're untouched by git operations on that repo.
 stack_env:
