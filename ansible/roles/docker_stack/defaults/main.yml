@@ -45,10 +45,17 @@ stack_env:
   TIMEZONE: "{{ timezone | default('UTC') }}"
   HOST_IP: "0.0.0.0"
 
+# Owner defaults to deploy_user, except home-assistant: that container runs as root with
+# cap_drop: ALL and no CHOWN capability (unlike plex/jellyfin, which have PUID/PGID +
+# CHOWN and fix ownership themselves on start). So its directory must already be owned by
+# root — matching how it worked on the old, manually-configured server — otherwise root
+# inside the container can't write to it and Home Assistant fails to start.
 stack_directories:
-  - "{{ stack_env.HOME_ASSISTANT_CONFIGURATION_DIRECTORY }}"
-  - "{{ stack_env.PLEX_CONFIG_DIRECTORY }}/config"
-  - "{{ stack_env.PLEX_CONTENT_DIRECTORY }}/content"
-  - "{{ stack_env.PLEX_CONTENT_DIRECTORY }}/downloads"
+  - path: "{{ stack_env.HOME_ASSISTANT_CONFIGURATION_DIRECTORY }}"
+    owner: root
+    group: root
+  - path: "{{ stack_env.PLEX_CONFIG_DIRECTORY }}/config"
+  - path: "{{ stack_env.PLEX_CONTENT_DIRECTORY }}/content"
+  - path: "{{ stack_env.PLEX_CONTENT_DIRECTORY }}/downloads"
 
 git_clone_accept_hostkey: true

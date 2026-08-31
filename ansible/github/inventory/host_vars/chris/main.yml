@@ -9,6 +9,7 @@ timezone: Europe/Berlin
 
 docker_users:
   - github
+  - alex
 
 # Public half of the GitHub Actions deploy keypair (private half is the SSH_PRIVATE_KEY
 # GitHub Actions secret on the chris environment). Generate with:

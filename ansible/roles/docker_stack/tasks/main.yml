@@ -121,12 +121,14 @@
 
 - name: Create stack data directories
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ item.path }}"
     state: directory
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
+    owner: "{{ item.owner | default(deploy_user) }}"
+    group: "{{ item.group | default(deploy_user) }}"
     mode: "0755"
   loop: "{{ stack_directories }}"
+  loop_control:
+    label: "{{ item.path }}"
 
 - name: Render Docker Compose environment file
   ansible.builtin.template:
