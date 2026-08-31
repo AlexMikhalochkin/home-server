@@ -5,6 +5,10 @@ name: Deploy
 # the exact same docker_stack Ansible tasks (tag: deploy) so there's one implementation of
 # "start the stack", not two to keep in sync. Runs as the restricted "github" deploy user —
 # no admin/sudo/vault credentials needed, since none of the deploy-tagged tasks touch them.
+# The collection install below IS still required even though the deploy-tagged tasks don't
+# use community.general themselves: Ansible statically resolves every module referenced
+# anywhere in site.yml (e.g. the storage role's filesystem module) before it can even parse
+# the playbook, regardless of --tags/when filtering.
 
 on:
   workflow_dispatch:
@@ -49,6 +53,7 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install "ansible-core>=2.16"
+          ansible-galaxy collection install -r ansible/requirements.yml
 
       - name: Write SSH private key
         run: |
