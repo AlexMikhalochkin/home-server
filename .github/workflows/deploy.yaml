@@ -1,5 +1,11 @@
 name: Deploy
 
+# Fast path: pull the latest code and restart the Docker stack. No OS/package/Samba/deploy-
+# user setup here (that's "Ansible Configure") — just clone + `docker compose up`, reusing
+# the exact same docker_stack Ansible tasks (tag: deploy) so there's one implementation of
+# "start the stack", not two to keep in sync. Runs as the restricted "github" deploy user —
+# no admin/sudo/vault credentials needed, since none of the deploy-tagged tasks touch them.
+
 on:
   workflow_dispatch:
     inputs:
@@ -28,6 +34,9 @@ jobs:
     environment: ${{ inputs.environment }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Tailscale
         uses: tailscale/github-action@v4
         with:
@@ -36,11 +45,24 @@ jobs:
           tags: ${{ vars.TAILSCALE_TAG }}
           ping: ${{ vars.TAILSCALE_TARGET_HOST }}
 
-      - name: SSH and run command
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ vars.TAILSCALE_TARGET_HOST }}
-          username: ${{ vars.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: /opt/github-deploy/home-server-configuration/start.sh ${{ inputs.branch || 'main' }}
+      - name: Install Ansible
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install "ansible-core>=2.16"
+
+      - name: Write SSH private key
+        run: |
+          install -m 600 -D /dev/null "${RUNNER_TEMP}/ssh_key"
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > "${RUNNER_TEMP}/ssh_key"
+
+      - name: Deploy stack (git pull + docker compose up)
+        working-directory: ansible/github
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          ansible-playbook playbooks/site.yml \
+            --tags deploy \
+            -e ansible_host="${{ vars.TAILSCALE_TARGET_HOST }}" \
+            -e ansible_user="${{ vars.SSH_USER }}" \
+            -e ansible_ssh_private_key_file="${RUNNER_TEMP}/ssh_key" \
+            -e deploy_branch="${{ inputs.branch || 'main' }}"

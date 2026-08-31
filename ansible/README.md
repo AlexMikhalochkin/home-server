@@ -174,9 +174,29 @@ Run individual parts with tags: `common`, `deploy_user`, `docker`, `storage`, `s
 6. Clones `home-server` (public, HTTPS), `home-server-configuration` and
    `private-home-server` (private, one deploy key each) to `/opt/github-deploy/`
 7. Renders `/opt/github-deploy/home-server/.env` from inventory vars
-8. Installs `/opt/github-deploy/home-server-configuration/start.sh` (used by the fast
-   `deploy.yaml` workflow for day-to-day redeploys without the full configure pass)
+8. Installs `/opt/github-deploy/home-server-configuration/start.sh` (manual break-glass
+   fallback only — see below)
 9. Runs `docker compose -f home-server/docker-compose.yaml -f private-home-server/docker-compose.yaml --profile chris pull` and `up -d`
+
+### Full configure vs. fast deploy — same tasks, different tags
+
+There's a single implementation of "bring the stack up": the `docker_stack` role's tasks,
+split into two tags.
+
+| Tag | Runs | Used by |
+|-----|------|---------|
+| `prepare` | Deploy user SSH keys, directories, `.env`, `start.sh` — one-time/rarely-changing environment setup | `site.yml` full run only |
+| `deploy` | Clone/pull the 3 repos, `docker compose pull` + `up` (core stack, then VPN-dependent group), show status | Both the full run **and** the fast `deploy.yaml` workflow |
+
+`deploy.yaml` runs `ansible-playbook site.yml --tags deploy`, connected as the restricted
+`github` deploy user — no admin/sudo password or vault password needed, since none of the
+`deploy`-tagged tasks touch them (they only read files already installed by a prior
+`prepare` pass). This keeps day-to-day redeploys fast and dependency-light while guaranteeing
+it's the exact same logic as the full configure, not a second hand-maintained copy.
+
+`start.sh` still exists (for SSHing in directly without CI), but is no longer the primary
+path — keep it in mind if you ever change the compose/profile logic, since it duplicates a
+small amount of that logic for the manual case.
 
 ## Attaching the media disk
 

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Manual break-glass fallback only — the "Deploy" GitHub Actions workflow now calls
+# `ansible-playbook site.yml --tags deploy` directly (same tasks, single source of truth).
+# Kept here for cases where you need to redeploy by SSHing in directly, without CI.
 set -euo pipefail
 
 BRANCH="${1:-{{ deploy_branch }}}"

@@ -18,10 +18,19 @@
 
 - name: Configure home server for Docker stack
   hosts: home_servers
-  gather_facts: true
+  gather_facts: false
   become: true
 
   pre_tasks:
+    # Explicit, non-privileged fact gathering: the fast "deploy" path connects as the
+    # restricted github deploy user (no sudo at all), and the implicit gather_facts step
+    # otherwise inherits the play's become: true (root), which fails for that user. tags:
+    # always makes sure this still runs under --tags deploy despite being unneeded there.
+    - name: Gather facts
+      ansible.builtin.setup:
+      become: false
+      tags: [always]
+
     - name: Load encrypted secrets
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../../vault/secrets.yml"

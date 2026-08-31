@@ -10,6 +10,7 @@
       home-server-configuration and private-home-server are private repos. Add
       github_clone_ssh_key_home_server_configuration and github_clone_ssh_key_private_home_server
       to ansible/vault/secrets.yml (one deploy key per repo, each with read-only access).
+  tags: [prepare]
 
 - name: Create deploy base directory
   ansible.builtin.file:
@@ -18,6 +19,7 @@
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0755"
+  tags: [prepare]
 
 - name: Ensure deploy user .ssh directory exists
   ansible.builtin.file:
@@ -26,6 +28,7 @@
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0700"
+  tags: [prepare]
 
 - name: Install GitHub deploy SSH keys
   ansible.builtin.copy:
@@ -40,6 +43,7 @@
   loop_control:
     label: "{{ item.file }}"
   no_log: true
+  tags: [prepare]
 
 - name: Configure SSH host aliases for the GitHub deploy keys
   ansible.builtin.blockinfile:
@@ -63,6 +67,7 @@
         IdentityFile {{ deploy_base_dir }}/.ssh/id_ed25519_private_home_server
         IdentitiesOnly yes
         StrictHostKeyChecking accept-new
+  tags: [prepare]
 
 - name: Clone or update home-server repository (public, HTTPS)
   ansible.builtin.git:
@@ -76,6 +81,7 @@
     force: true
   become: true
   become_user: "{{ deploy_user }}"
+  tags: [deploy]
 
 # home-server-configuration and private-home-server are usually untouched by a feature
 # branch that only changes home-server. Mirror the old start.sh script's fallback: use
@@ -88,6 +94,7 @@
   register: home_server_configuration_branch_check
   changed_when: false
   failed_when: false
+  tags: [deploy]
 
 - name: Clone or update home-server-configuration repository (private)
   ansible.builtin.git:
@@ -99,6 +106,7 @@
     force: true
   become: true
   become_user: "{{ deploy_user }}"
+  tags: [deploy]
 
 - name: Check whether deploy_branch exists on private-home-server
   ansible.builtin.command: "git ls-remote --exit-code --heads {{ private_home_server_repo_ssh }} {{ deploy_branch }}"
@@ -107,6 +115,7 @@
   register: private_home_server_branch_check
   changed_when: false
   failed_when: false
+  tags: [deploy]
 
 - name: Clone or update private-home-server repository (private, adds qbittorrent)
   ansible.builtin.git:
@@ -118,6 +127,7 @@
     force: true
   become: true
   become_user: "{{ deploy_user }}"
+  tags: [deploy]
 
 - name: Create stack data directories
   ansible.builtin.file:
@@ -129,6 +139,7 @@
   loop: "{{ stack_directories }}"
   loop_control:
     label: "{{ item.path }}"
+  tags: [prepare]
 
 - name: Render Docker Compose environment file
   ansible.builtin.template:
@@ -137,6 +148,7 @@
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0640"
+  tags: [prepare]
 
 - name: Install deploy start script
   ansible.builtin.template:
@@ -145,6 +157,7 @@
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0755"
+  tags: [prepare]
 
 - name: Pull Docker images
   ansible.builtin.command:
@@ -156,8 +169,11 @@
       {% for profile in docker_compose_all_profiles %}--profile {{ profile }} {% endfor %}
       pull
     chdir: "{{ home_server_dir }}"
+  become: true
+  become_user: "{{ deploy_user }}"
   changed_when: true
   when: docker_compose_pull
+  tags: [deploy]
 
 - name: Start Docker stack
   ansible.builtin.command:
@@ -169,9 +185,12 @@
       {% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %}
       up -d --remove-orphans
     chdir: "{{ home_server_dir }}"
+  become: true
+  become_user: "{{ deploy_user }}"
   register: docker_compose_up_result
   changed_when: docker_compose_up_result.rc == 0
   when: docker_compose_up
+  tags: [deploy]
 
 # openvpn and the services sharing its network namespace (home-assistant, jellyfin) depend
 # on an external VPN provider account. Started as their own best-effort command so a VPN
@@ -187,10 +206,13 @@
       --profile {{ vpn_profile }}
       up -d --remove-orphans
     chdir: "{{ home_server_dir }}"
+  become: true
+  become_user: "{{ deploy_user }}"
   register: docker_compose_vpn_up_result
   changed_when: docker_compose_vpn_up_result.rc == 0
   failed_when: false
   when: docker_compose_up and vpn_enabled | bool
+  tags: [deploy]
 
 - name: Warn if VPN-dependent services failed to start
   ansible.builtin.debug:
@@ -202,6 +224,7 @@
   when:
     - docker_compose_up and vpn_enabled | bool
     - docker_compose_vpn_up_result.rc != 0
+  tags: [deploy]
 
 - name: Show running containers
   ansible.builtin.command:
@@ -212,9 +235,13 @@
       {% for profile in docker_compose_all_profiles %}--profile {{ profile }} {% endfor %}
       ps
     chdir: "{{ home_server_dir }}"
+  become: true
+  become_user: "{{ deploy_user }}"
   register: docker_compose_ps
   changed_when: false
+  tags: [deploy]
 
 - name: Docker stack status
   ansible.builtin.debug:
     msg: "{{ docker_compose_ps.stdout_lines }}"
+  tags: [deploy]
