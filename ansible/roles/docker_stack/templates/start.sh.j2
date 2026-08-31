@@ -4,6 +4,8 @@ set -euo pipefail
 BRANCH="${1:-{{ deploy_branch }}}"
 BASE="{{ deploy_base_dir }}"
 PROFILE_ARGS=({% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %})
+ALL_PROFILE_ARGS=({% for profile in docker_compose_all_profiles %}--profile {{ profile }} {% endfor %})
+VPN_PROFILE_ARGS=(--profile {{ vpn_profile }})
 HOME_SERVER_DIR="${BASE}/home-server"
 HOME_SERVER_CONFIGURATION_DIR="${BASE}/home-server-configuration"
 PRIVATE_HOME_SERVER_DIR="${BASE}/private-home-server"
@@ -41,7 +43,7 @@ docker compose \
   -f "${HOME_SERVER_DIR}/docker-compose.yaml" \
   -f "${PRIVATE_HOME_SERVER_DIR}/docker-compose.yaml" \
   --env-file "${HOME_SERVER_DIR}/.env" \
-  "${PROFILE_ARGS[@]}" \
+  "${ALL_PROFILE_ARGS[@]}" \
   pull
 docker compose \
   -f "${HOME_SERVER_DIR}/docker-compose.yaml" \
@@ -49,4 +51,19 @@ docker compose \
   --env-file "${HOME_SERVER_DIR}/.env" \
   "${PROFILE_ARGS[@]}" \
   up -d --remove-orphans
+
+# openvpn and the services sharing its network namespace (home-assistant, jellyfin) depend
+# on an external VPN provider account. Started separately, best-effort, so a VPN
+# outage/credential problem can't abort the rest of the stack (already up above).
+if ! docker compose \
+  -f "${HOME_SERVER_DIR}/docker-compose.yaml" \
+  -f "${PRIVATE_HOME_SERVER_DIR}/docker-compose.yaml" \
+  --env-file "${HOME_SERVER_DIR}/.env" \
+  "${VPN_PROFILE_ARGS[@]}" \
+  up -d --remove-orphans; then
+    echo "WARNING: openvpn/home-assistant/jellyfin failed to start. This is usually an" \
+         "external VPN provider/account issue, not a stack problem — check your VPN" \
+         "account status/credentials, then re-run this script."
+fi
+
 docker image prune -a -f

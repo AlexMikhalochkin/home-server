@@ -33,8 +33,20 @@ docker_compose_up: true
 zigbee_enabled: false
 zigbee_profile: chris-zigbee
 
+# openvpn (and home-assistant/jellyfin, which share its network namespace) depend on an
+# external VPN provider account. If that account/credentials have a problem, `docker compose
+# up` fails for the *entire* stack, not just this group (same class of issue as zigbee2mqtt
+# above) — so they sit behind their own profile and are started in a separate, best-effort
+# command that can't block the rest of the stack from coming up. Set vpn_enabled to false to
+# skip them entirely (e.g. while troubleshooting the VPN account).
+vpn_enabled: true
+vpn_profile: chris-vpn
+
 docker_compose_profiles: >-
   {{ [docker_compose_profile] + ([zigbee_profile] if zigbee_enabled | bool else []) }}
+
+docker_compose_all_profiles: >-
+  {{ docker_compose_profiles + ([vpn_profile] if vpn_enabled | bool else []) }}
 
 # Rendered to home-server/.env — override per host in inventory. Kept as siblings of
 # home-server (not nested inside it) so they're untouched by git operations on that repo.

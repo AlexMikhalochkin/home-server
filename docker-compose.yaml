@@ -61,7 +61,7 @@ services:
     restart: unless-stopped
     cap_drop:
       - ALL
-    profiles: [ chris ]
+    profiles: [ chris-vpn ]
     security_opt:
       - no-new-privileges:true
 
@@ -91,7 +91,7 @@ services:
     # kics-scan ignore-line
     devices:
       - /dev/dri:/dev/dri
-    profiles: [ chris ]
+    profiles: [ chris-vpn ]
     security_opt:
       - no-new-privileges:true
 
@@ -186,7 +186,7 @@ services:
     dns:
       - 8.8.4.4
       - 8.8.8.8
-    profiles: [ chris ]
+    profiles: [ chris-vpn ]
     read_only: true
     security_opt:
       - no-new-privileges:true
