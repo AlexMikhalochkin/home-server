@@ -32,7 +32,7 @@ media_disk_format: false
 # zigbee2mqtt needs its USB Zigbee coordinator (/dev/ttyUSB0) physically moved from the old
 # server too. Flip to true once it's plugged into this host, then re-run site.yml — until
 # then it's simply not part of the stack (its own compose profile, not started with `chris`).
-zigbee_enabled: false
+zigbee_enabled: true
 
 stack_env:
   HOME_ASSISTANT_CONFIGURATION_DIRECTORY: /opt/github-deploy/homeassistant/config
