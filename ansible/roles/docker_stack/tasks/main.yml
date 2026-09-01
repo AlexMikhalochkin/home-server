@@ -156,7 +156,7 @@
     dest: "{{ home_server_configuration_dir }}/start.sh"
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
-    mode: "0755"
+    mode: "0750"
   tags: [prepare]
 
 - name: Pull Docker images
