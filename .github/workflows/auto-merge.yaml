@@ -1,0 +1,66 @@
+name: Auto-merge Pull Requests
+
+on:
+  pull_request_review:
+    types: [submitted]
+  status: {}
+  check_suite:
+    types: [completed]
+  pull_request:
+    types: [ready_for_review]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Check if PR is approved and all checks pass
+        id: check-status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number || github.event.number }}"
+          
+          # Get PR details
+          PR_DATA=$(gh pr view $PR_NUMBER --json state,reviewDecision,statusCheckRollupState,mergeable,headRefName)
+          
+          STATE=$(echo "$PR_DATA" | jq -r '.state')
+          REVIEW_DECISION=$(echo "$PR_DATA" | jq -r '.reviewDecision')
+          STATUS_CHECKS=$(echo "$PR_DATA" | jq -r '.statusCheckRollupState')
+          MERGEABLE=$(echo "$PR_DATA" | jq -r '.mergeable')
+          HEAD_REF=$(echo "$PR_DATA" | jq -r '.headRefName')
+          
+          echo "PR State: $STATE"
+          echo "Review Decision: $REVIEW_DECISION"
+          echo "Status Checks: $STATUS_CHECKS"
+          echo "Mergeable: $MERGEABLE"
+          echo "Head Ref: $HEAD_REF"
+          
+          if [[ "$STATE" == "OPEN" && "$REVIEW_DECISION" == "APPROVED" && "$STATUS_CHECKS" == "SUCCESS" && "$MERGEABLE" == "MERGEABLE" ]]; then
+            echo "ready-to-merge=true" >> $GITHUB_OUTPUT
+            echo "head-ref=$HEAD_REF" >> $GITHUB_OUTPUT
+          else
+            echo "ready-to-merge=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Auto-merge PR
+        if: steps.check-status.outputs.ready-to-merge == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number || github.event.number }}"
+          HEAD_REF="${{ steps.check-status.outputs.head-ref }}"
+          
+          gh pr merge $PR_NUMBER --squash --delete-branch
+          echo "✅ PR #$PR_NUMBER merged and branch '$HEAD_REF' deleted"
