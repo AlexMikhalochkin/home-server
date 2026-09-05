@@ -1,6 +1,9 @@
 /.idea
 .env
 
+# Local MCP server config (contains SonarQube Cloud token)
+.mcp.json
+
 # Ansible — machine-specific connection overrides
 ansible/bootstrap/inventory/host_vars/*/local.yml
 ansible/**/local.yml

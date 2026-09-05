@@ -72,7 +72,7 @@ The `chris-vpn` profile is started in a separate best-effort `docker compose up`
 ### Key Design Decisions
 
 - **`DEPLOY_UID`/`DEPLOY_GID` are not hardcoded** — the OS assigns a free system uid/gid at deploy user creation; this is fed into `.env`. Necessary because Ubuntu changes system uid allocation between versions.
-- **Media disk uses UUID** (`storage` role) — survives port/enclosure changes. Will never reformat unless `media_disk_format: true` is explicitly set.
+- **Storage is declarative and multi-disk** (`storage` role) — each optional disk uses a stable UUID/by-id source and an explicit mount point; services consume named paths from the environment-specific host vars. Disks are never reformatted unless an entry explicitly sets `format: true` and no filesystem exists.
 - **Grafana anonymous admin access** — intentional, LAN-only.
 - **`openvpn` network namespace sharing** — `home-assistant` and `jellyfin` use `network_mode: "service:openvpn"` so their traffic routes through the VPN.
 
