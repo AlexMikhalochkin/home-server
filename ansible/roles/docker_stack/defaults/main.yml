@@ -48,12 +48,24 @@ docker_compose_profiles: >-
 docker_compose_all_profiles: >-
   {{ docker_compose_profiles + ([vpn_profile] if vpn_enabled | bool else []) }}
 
+service_paths:
+  plex_content: "{{ deploy_base_dir }}/storage/plex-content"
+  qbittorrent_media: "{{ deploy_base_dir }}/storage/qbittorrent-media"
+  qbittorrent_downloads: "{{ deploy_base_dir }}/storage/qbittorrent-downloads"
+  qbittorrent_incomplete: "{{ deploy_base_dir }}/storage/qbittorrent-incomplete"
+  samba_share: "{{ deploy_base_dir }}/storage/samba"
+
 # Rendered to home-server/.env — override per host in inventory. Kept as siblings of
 # home-server (not nested inside it) so they're untouched by git operations on that repo.
 stack_env:
   HOME_ASSISTANT_CONFIGURATION_DIRECTORY: "{{ deploy_base_dir }}/homeassistant/config"
   PLEX_CONFIG_DIRECTORY: "{{ deploy_base_dir }}/plex"
-  PLEX_CONTENT_DIRECTORY: /media/disk/sambashare
+  PLEX_CONTENT_DIRECTORY: "{{ service_paths.plex_content }}"
+  PLEX_MEDIA_PATH: "{{ service_paths.plex_content }}"
+  QBITTORRENT_MEDIA_PATH: "{{ service_paths.qbittorrent_media }}"
+  QBITTORRENT_DOWNLOADS_PATH: "{{ service_paths.qbittorrent_downloads }}"
+  QBITTORRENT_INCOMPLETE_PATH: "{{ service_paths.qbittorrent_incomplete }}"
+  SAMBA_SHARE_PATH: "{{ service_paths.samba_share }}"
   TIMEZONE: "{{ timezone | default('UTC') }}"
   HOST_IP: "0.0.0.0"
 
@@ -67,7 +79,17 @@ stack_directories:
     owner: root
     group: root
   - path: "{{ stack_env.PLEX_CONFIG_DIRECTORY }}/config"
-  - path: "{{ stack_env.PLEX_CONTENT_DIRECTORY }}/content"
-  - path: "{{ stack_env.PLEX_CONTENT_DIRECTORY }}/downloads"
+  - path: "{{ service_paths.plex_content }}"
+    owner: 1000
+    group: 1000
+  - path: "{{ service_paths.qbittorrent_media }}"
+    owner: 1000
+    group: 1000
+  - path: "{{ service_paths.qbittorrent_downloads }}"
+    owner: 1000
+    group: 1000
+  - path: "{{ service_paths.qbittorrent_incomplete }}"
+    owner: 1000
+    group: 1000
 
 git_clone_accept_hostkey: true

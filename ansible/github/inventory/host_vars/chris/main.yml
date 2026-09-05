@@ -17,17 +17,28 @@ docker_users:
 github_ci_ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICkxEh2AMyiTtG61MB2qz7tm/+FLGiOKzD2cFkwzKqxg gh-actions-chris"
 
 samba_enabled: true
-samba_share_path: /media/disk/sambashare
+samba_share_path: "{{ service_paths.samba_share }}"
 samba_user: alex
 samba_create_user: false
 
-# Second disk migrated from the old server (Seagate ST1000LM024, serial S30YJ9HG320291,
-# ext4, 908G of existing media data — do NOT reformat it). Flip media_disk_enabled to true
-# once the drive is physically attached to this host, then re-run site.yml.
-media_disk_enabled: false
-media_disk_source: /dev/disk/by-uuid/b64016e5-92cb-40a8-93c9-a2bc59893cf1
-media_disk_mount_point: /media/disk
-media_disk_format: false
+# External disks are optional. Add entries here when disks are attached, then point only
+# the services that should use them at their mount-point paths below.
+storage_disks: []
+
+# Example for the existing 1 TB media disk:
+# storage_disks:
+#   - name: media
+#     source: /dev/disk/by-uuid/b64016e5-92cb-40a8-93c9-a2bc59893cf1
+#     mount_point: /media/media
+#     fstype: ext4
+#     format: false
+
+service_paths:
+  plex_content: /opt/github-deploy/storage/plex-content
+  qbittorrent_media: /opt/github-deploy/storage/qbittorrent-media
+  qbittorrent_downloads: /opt/github-deploy/storage/qbittorrent-downloads
+  qbittorrent_incomplete: /opt/github-deploy/storage/qbittorrent-incomplete
+  samba_share: /opt/github-deploy/storage/samba
 
 # zigbee2mqtt needs its USB Zigbee coordinator (/dev/ttyUSB0) physically moved from the old
 # server too. Flip to true once it's plugged into this host, then re-run site.yml — until
@@ -37,6 +48,10 @@ zigbee_enabled: true
 stack_env:
   HOME_ASSISTANT_CONFIGURATION_DIRECTORY: /opt/github-deploy/homeassistant/config
   PLEX_CONFIG_DIRECTORY: /opt/github-deploy/plex
-  PLEX_CONTENT_DIRECTORY: /media/disk/sambashare
+  PLEX_CONTENT_DIRECTORY: "{{ service_paths.plex_content }}"
+  PLEX_MEDIA_PATH: "{{ service_paths.plex_content }}"
+  QBITTORRENT_MEDIA_PATH: "{{ service_paths.qbittorrent_media }}"
+  QBITTORRENT_DOWNLOADS_PATH: "{{ service_paths.qbittorrent_downloads }}"
+  QBITTORRENT_INCOMPLETE_PATH: "{{ service_paths.qbittorrent_incomplete }}"
   TIMEZONE: Europe/Berlin
   HOST_IP: "0.0.0.0"

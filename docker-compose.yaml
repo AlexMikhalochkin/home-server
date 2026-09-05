@@ -74,7 +74,7 @@ services:
       # kics-scan ignore-line
       - jellyfin-cache:/cache
       # kics-scan ignore-line
-      - ${PLEX_CONTENT_DIRECTORY}/content:/media:ro
+      - ${PLEX_MEDIA_PATH}:/media:ro
     environment:
       - PUID=1000
       - PGID=1000
@@ -201,7 +201,7 @@ services:
     container_name: plex
     volumes:
       - ${PLEX_CONFIG_DIRECTORY}/config:/config
-      - ${PLEX_CONTENT_DIRECTORY}/content:/content
+      - ${PLEX_MEDIA_PATH}:/content
     environment:
       - PUID=1000
       - PGID=1000

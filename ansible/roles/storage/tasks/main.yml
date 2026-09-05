@@ -1,51 +1,74 @@
 ---
-- name: Require a media_disk_source when storage is enabled
+- name: Require stable device paths for configured disks
   ansible.builtin.assert:
     that:
-      - media_disk_source is defined
-      - media_disk_source | length > 0
+      - item.name is defined
+      - item.name | length > 0
+      - item.source is defined
+      - item.source | length > 0
+      - item.mount_point is defined
+      - item.mount_point | length > 0
     fail_msg: >-
-      media_disk_enabled is true but media_disk_source is empty. Set it to a stable device
-      path such as /dev/disk/by-uuid/<uuid> in inventory/host_vars/{{ inventory_hostname }}/main.yml.
+      Storage disk '{{ item.name | default('unnamed') }}' must define source and mount_point.
+  loop: "{{ storage_disks }}"
+  loop_control:
+    label: "{{ item.name | default('unnamed') }}"
 
-- name: Check whether the device is already present
+- name: Check whether each configured device is already present
   ansible.builtin.stat:
-    path: "{{ media_disk_source }}"
-  register: media_disk_stat
+    path: "{{ item.source }}"
+  loop: "{{ storage_disks }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: storage_disk_stats
 
-- name: Fail if the device path does not exist yet
+- name: Fail if a configured device does not exist yet
   ansible.builtin.assert:
     that:
-      - media_disk_stat.stat.exists
+      - item.stat.exists
     fail_msg: >-
-      {{ media_disk_source }} does not exist on this host. Make sure the disk is physically
-      attached (and its UUID/serial in media_disk_source still matches) before enabling
-      media_disk_enabled.
+      {{ item.item.source }} does not exist on this host. Attach the disk before enabling
+      storage entry '{{ item.item.name }}'.
+  loop: "{{ storage_disk_stats.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
 
-- name: Detect existing filesystem on the device
-  ansible.builtin.command: "blkid -o value -s TYPE {{ media_disk_source }}"
+- name: Detect existing filesystem on each configured device
+  ansible.builtin.command: "blkid -o value -s TYPE {{ item.source }}"
   register: media_disk_blkid
   changed_when: false
   failed_when: false
+  loop: "{{ storage_disks }}"
+  loop_control:
+    label: "{{ item.name }}"
 
 - name: Create filesystem only if explicitly requested and none exists yet
   community.general.filesystem:
-    dev: "{{ media_disk_source }}"
-    fstype: "{{ media_disk_fstype }}"
+    dev: "{{ item.item.source }}"
+    fstype: "{{ item.item.fstype | default('ext4') }}"
   when:
-    - media_disk_format | bool
-    - media_disk_blkid.stdout | trim | length == 0
+    - item.item.format | default(false) | bool
+    - item.stdout | trim | length == 0
+  loop: "{{ media_disk_blkid.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
 
-- name: Ensure mount point directory exists
+- name: Ensure configured mount point directories exist
   ansible.builtin.file:
-    path: "{{ media_disk_mount_point }}"
+    path: "{{ item.mount_point }}"
     state: directory
     mode: "0755"
+  loop: "{{ storage_disks }}"
+  loop_control:
+    label: "{{ item.name }}"
 
-- name: Mount the media disk and persist it in fstab
+- name: Mount configured disks and persist them in fstab
   ansible.posix.mount:
-    path: "{{ media_disk_mount_point }}"
-    src: "{{ media_disk_source }}"
-    fstype: "{{ media_disk_fstype }}"
-    opts: "{{ media_disk_mount_opts }}"
+    path: "{{ item.mount_point }}"
+    src: "{{ item.source }}"
+    fstype: "{{ item.fstype | default('ext4') }}"
+    opts: "{{ item.mount_opts | default('defaults') }}"
     state: mounted
+  loop: "{{ storage_disks }}"
+  loop_control:
+    label: "{{ item.name }}"

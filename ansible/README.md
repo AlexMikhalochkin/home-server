@@ -32,8 +32,8 @@ laptop again.
 | `common` | github | `apt update/upgrade`, base packages (incl. `acl`, needed for `become_user` tasks), timezone |
 | `deploy_user` | github | Create the dedicated `github` deploy user/group (uid/gid picked by the OS — see note below), install its GitHub Actions authorized key |
 | `docker` | github | Docker Engine + Compose plugin, adds the deploy user to the `docker` group |
-| `storage` | github | **Opt-in** (`media_disk_enabled`). Mount an existing disk (by UUID/by-id path) at `/media/disk`; never reformats a disk that already has a filesystem |
-| `samba` | github | Media share at `/media/disk/sambashare` (optional) |
+| `storage` | github | **Opt-in** (`storage_disks`). Mount any number of existing disks by UUID/by-id; never reformats a disk that already has a filesystem |
+| `samba` | github | Share the environment's configured `service_paths.samba_share` directory (optional) |
 | `docker_stack` | github | Clone `home-server`, `home-server-configuration`, `private-home-server`; render `.env`; install `start.sh`; `docker compose up` |
 
 ### Why the deploy user's uid/gid aren't hardcoded
@@ -169,8 +169,9 @@ Run individual parts with tags: `common`, `deploy_user`, `docker`, `storage`, `s
 2. Creates the `github` deploy user (uid/gid picked by the OS) and installs its GitHub
    Actions authorized key
 3. Installs Docker Engine + Compose plugin
-4. Mounts the media disk, if `media_disk_enabled: true` (off by default — see below)
-5. Configures Samba for media at `/media/disk/sambashare`, if `samba_enabled: true`
+4. Mounts every disk listed in `storage_disks` (empty by default — see below)
+5. Configures Samba for the environment's `service_paths.samba_share` directory, if
+   `samba_enabled: true`
 6. Clones `home-server` (public, HTTPS), `home-server-configuration` and
    `private-home-server` (private, one deploy key each) to `/opt/github-deploy/`
 7. Renders `/opt/github-deploy/home-server/.env` from inventory vars
@@ -198,21 +199,47 @@ it's the exact same logic as the full configure, not a second hand-maintained co
 path — keep it in mind if you ever change the compose/profile logic, since it duplicates a
 small amount of that logic for the manual case.
 
-## Attaching the media disk
+## Disks and service paths
 
-The old server's second disk (Seagate `ST1000LM024`, ext4, holds all existing Plex/Jellyfin/
-qbittorrent data) is meant to be physically moved to the new server, not replaced. Its
-filesystem UUID travels with it regardless of which port/enclosure it ends up in. Once it's
-plugged in:
+Disk attachment and service storage are separate settings in the environment file
+`github/inventory/host_vars/chris/main.yml`.
 
-1. Set `media_disk_enabled: true` in `github/inventory/host_vars/chris/main.yml`
-   (`media_disk_source` is already pre-filled with the drive's UUID).
-2. Rerun `site.yml` (or the workflow). The `storage` role mounts it and adds an `fstab`
-   entry; it will **not** reformat a disk that already has a filesystem unless you
-   explicitly set `media_disk_format: true`.
+With no disks attached, `storage_disks: []` leaves the system disk in use and the stack
+still has valid directories under `/opt/github-deploy/storage/`. When a disk is attached,
+add it by stable UUID or by-id path:
 
-If you ever use a genuinely different/blank disk instead, get its identifier with
-`sudo blkid` or use a `/dev/disk/by-id/...` path — `media_disk_source` accepts either.
+```yaml
+storage_disks:
+  - name: media
+    source: /dev/disk/by-uuid/<uuid>
+    mount_point: /media/media
+    fstype: ext4
+    format: false
+  - name: downloads
+    source: /dev/disk/by-uuid/<other-uuid>
+    mount_point: /media/downloads
+    fstype: ext4
+    format: false
+```
+
+Then point services at whichever disk should hold their data:
+
+```yaml
+service_paths:
+  plex_content: /media/media/content
+  qbittorrent_media: /media/media/content
+  qbittorrent_downloads: /media/downloads/torrents
+  qbittorrent_incomplete: /media/downloads/incomplete
+  samba_share: /media/media/share
+```
+
+Ansible mounts the configured disks, creates all configured service directories, and
+renders the corresponding Compose variables into `.env`. It never formats an existing
+filesystem unless `format: true` is explicitly set and the device has no filesystem.
+
+The private `private-home-server` Compose overlay must use the generated
+`QBITTORRENT_MEDIA_PATH`, `QBITTORRENT_DOWNLOADS_PATH`, and
+`QBITTORRENT_INCOMPLETE_PATH` variables instead of hardcoded `/media/disk/...` paths.
 
 ## Configuration layers
 

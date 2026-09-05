@@ -45,7 +45,7 @@
       tags: [docker]
     - role: storage
       tags: [storage]
-      when: media_disk_enabled | bool
+      when: storage_disks | length > 0
     - role: samba
       tags: [samba]
       when: samba_enabled | bool

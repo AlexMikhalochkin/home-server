@@ -1,16 +1,14 @@
 ---
 # Disabled until the media disk is physically attached to this host.
-media_disk_enabled: false
+# External disks are optional. Each entry is independent, so services can use different
+# disks or continue using the system disk when this list is empty.
+storage_disks: []
 
-# Stable device path — prefer /dev/disk/by-uuid/<uuid> (survives moving the drive between
-# machines/ports without a reformat) or /dev/disk/by-id/<serial> (survives reformatting too).
-# Never point this at a raw /dev/sdX name — those can be reassigned across reboots/hardware.
-media_disk_source: ""
-
-media_disk_mount_point: /media/disk
-media_disk_fstype: ext4
-media_disk_mount_opts: defaults
-
-# Safety switch: only create a filesystem when explicitly requested AND the device has none
-# yet. Never reformats a device that already has a filesystem, regardless of this setting.
-media_disk_format: false
+# Example:
+# storage_disks:
+#   - name: media
+#     source: /dev/disk/by-uuid/<uuid>
+#     mount_point: /media/media
+#     fstype: ext4
+#     mount_opts: defaults
+#     format: false
