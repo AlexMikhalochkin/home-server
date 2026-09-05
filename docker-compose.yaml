@@ -95,27 +95,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  matterbridge:
-    image: luligu/matterbridge:3.4.7
-    container_name: matterbridge
-    volumes:
-      - ../home-server-configuration/Matterbridge:/root/Matterbridge
-      - ../home-server-configuration/.matterbridge:/root/.matterbridge
-    environment:
-      - TZ=${TIMEZONE}
-    # kics-scan ignore-line
-    network_mode: host
-    restart: always
-    # kics-scan ignore-line
-    cap_add:
-      - NET_BIND_SERVICE
-      - NET_RAW
-    cap_drop:
-      - ALL
-    profiles: [ chris ]
-    security_opt:
-      - no-new-privileges:true
-
   mosquitto:
     image: eclipse-mosquitto:2.0.22
     container_name: mosquitto
