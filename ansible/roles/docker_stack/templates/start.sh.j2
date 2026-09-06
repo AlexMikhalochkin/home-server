@@ -55,18 +55,19 @@ docker compose \
   "${PROFILE_ARGS[@]}" \
   up -d --remove-orphans
 
-# openvpn and the services sharing its network namespace (home-assistant, jellyfin) depend
-# on an external VPN provider account. Started separately, best-effort, so a VPN
-# outage/credential problem can't abort the rest of the stack (already up above).
+{% if vpn_enabled | bool %}
+# OpenVPN is optional and independent of Home Assistant and Jellyfin. Start it separately
+# and best-effort so missing credentials cannot abort the normal stack.
 if ! docker compose \
   -f "${HOME_SERVER_DIR}/docker-compose.yaml" \
   -f "${PRIVATE_HOME_SERVER_DIR}/docker-compose.yaml" \
   --env-file "${HOME_SERVER_DIR}/.env" \
   "${VPN_PROFILE_ARGS[@]}" \
   up -d --remove-orphans; then
-    echo "WARNING: openvpn/home-assistant/jellyfin failed to start. This is usually an" \
+    echo "WARNING: openvpn failed to start. This is usually an" \
          "external VPN provider/account issue, not a stack problem — check your VPN" \
          "account status/credentials, then re-run this script."
 fi
+{% endif %}
 
 docker image prune -a -f

@@ -57,11 +57,12 @@ services:
       - ../home-server-configuration/home-assistant/automations.yaml:/config/automations.yaml
     environment:
       - TZ=${TIMEZONE}
-    network_mode: "service:openvpn"
+    ports:
+      - '${HOST_IP}:8123:8123'
     restart: unless-stopped
     cap_drop:
       - ALL
-    profiles: [ chris-vpn ]
+    profiles: [ chris ]
     security_opt:
       - no-new-privileges:true
 
@@ -79,7 +80,8 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=${TIMEZONE}
-    network_mode: "service:openvpn"
+    ports:
+      - '${HOST_IP}:8096:8096'
     restart: unless-stopped
     # kics-scan ignore-line
     cap_add:
@@ -91,7 +93,7 @@ services:
     # kics-scan ignore-line
     devices:
       - /dev/dri:/dev/dri
-    profiles: [ chris-vpn ]
+    profiles: [ chris ]
     security_opt:
       - no-new-privileges:true
 
@@ -150,8 +152,6 @@ services:
       - TZ=${TIMEZONE}
     ports:
       - '7359:7359/udp'
-      - '8096:8096'
-      - '8123:8123'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped

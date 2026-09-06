@@ -193,11 +193,9 @@
   when: docker_compose_up
   tags: [deploy]
 
-# openvpn and the services sharing its network namespace (home-assistant, jellyfin) depend
-# on an external VPN provider account. Started as their own best-effort command so a VPN
-# outage/credential problem can't fail the whole "one button" run — the rest of the stack
-# above is already up regardless of what happens here.
-- name: Start VPN-dependent services (openvpn, home-assistant, jellyfin)
+# OpenVPN is optional and independent of the normal stack. Services that need it must
+# explicitly opt into a routed design rather than sharing its network namespace.
+- name: Start optional VPN service
   ansible.builtin.command:
     cmd: >-
       docker compose
@@ -215,10 +213,10 @@
   when: docker_compose_up and vpn_enabled | bool
   tags: [deploy]
 
-- name: Warn if VPN-dependent services failed to start
+- name: Warn if optional VPN service failed to start
   ansible.builtin.debug:
     msg: >-
-      openvpn/home-assistant/jellyfin failed to start (rc={{ docker_compose_vpn_up_result.rc }}).
+      openvpn failed to start (rc={{ docker_compose_vpn_up_result.rc }}).
       This is usually an external VPN provider/account issue, not an Ansible problem — check
       your VPN account status/credentials, then re-run this playbook (or just the 'stack' tag)
       once resolved. Rest of the stack is unaffected. Details: {{ docker_compose_vpn_up_result.stderr }}
