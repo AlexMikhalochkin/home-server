@@ -76,6 +76,7 @@ stack_directories:
   - path: "{{ stack_env.HOME_ASSISTANT_CONFIGURATION_DIRECTORY }}"
     owner: root
     group: root
+    recurse: true
   # Plex runs as PUID 1000 inside the container and must own its existing
   # database, preferences, and scanner state.
   - path: "{{ stack_env.PLEX_CONFIG_DIRECTORY }}/config"
