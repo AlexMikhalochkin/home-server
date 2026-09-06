@@ -24,6 +24,8 @@ services:
     volumes:
       # kics-scan ignore-line
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     environment:
       - TZ=${TIMEZONE}
       - GF_AUTH_ANONYMOUS_ENABLED=true
