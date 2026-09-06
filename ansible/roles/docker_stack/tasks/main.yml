@@ -136,6 +136,7 @@
     owner: "{{ item.owner | default(deploy_user) }}"
     group: "{{ item.group | default(deploy_user) }}"
     mode: "0755"
+    recurse: "{{ item.recurse | default(false) }}"
   loop: "{{ stack_directories }}"
   loop_control:
     label: "{{ item.path }}"
