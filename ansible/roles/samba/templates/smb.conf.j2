@@ -5,8 +5,10 @@
    map to guest = Bad User
    dns proxy = no
 
-[{{ samba_share_name }}]
-   path = {{ samba_share_path }}
+{% for share in samba_shares %}
+[{{ share.name }}]
+   comment = {{ share.comment }}
+   path = {{ share.path }}
    browseable = yes
    read only = no
    guest ok = no
@@ -14,3 +16,4 @@
    force user = {{ samba_user }}
    create mask = 0664
    directory mask = 0775
+{% endfor %}

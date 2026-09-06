@@ -17,7 +17,16 @@ docker_users:
 github_ci_ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICkxEh2AMyiTtG61MB2qz7tm/+FLGiOKzD2cFkwzKqxg gh-actions-chris"
 
 samba_enabled: true
-samba_share_path: "{{ service_paths.samba_share }}"
+samba_shares:
+  - name: downloads
+    path: "{{ service_paths.downloads }}"
+    comment: qBittorrent downloads
+  - name: tv-series
+    path: "{{ service_paths.tv_series }}"
+    comment: TV series
+  - name: movies
+    path: "{{ service_paths.movies }}"
+    comment: Movies
 samba_user: alex
 samba_create_user: false
 
@@ -34,11 +43,10 @@ storage_disks: []
 #     format: false
 
 service_paths:
-  plex_content: /opt/github-deploy/storage/plex-content
-  qbittorrent_media: /opt/github-deploy/storage/qbittorrent-media
-  qbittorrent_downloads: /opt/github-deploy/storage/qbittorrent-downloads
-  qbittorrent_incomplete: /opt/github-deploy/storage/qbittorrent-incomplete
-  samba_share: /opt/github-deploy/storage/samba
+  content: /opt/github-deploy/storage/content
+  tv_series: /opt/github-deploy/storage/content/tv-series
+  movies: /opt/github-deploy/storage/content/movies
+  downloads: /opt/github-deploy/storage/downloads
 
 # zigbee2mqtt needs its USB Zigbee coordinator (/dev/ttyUSB0) physically moved from the old
 # server too. Flip to true once it's plugged into this host, then re-run site.yml — until
@@ -48,10 +56,10 @@ zigbee_enabled: true
 stack_env:
   HOME_ASSISTANT_CONFIGURATION_DIRECTORY: /opt/github-deploy/homeassistant/config
   PLEX_CONFIG_DIRECTORY: /opt/github-deploy/plex
-  PLEX_CONTENT_DIRECTORY: "{{ service_paths.plex_content }}"
-  PLEX_MEDIA_PATH: "{{ service_paths.plex_content }}"
-  QBITTORRENT_MEDIA_PATH: "{{ service_paths.qbittorrent_media }}"
-  QBITTORRENT_DOWNLOADS_PATH: "{{ service_paths.qbittorrent_downloads }}"
-  QBITTORRENT_INCOMPLETE_PATH: "{{ service_paths.qbittorrent_incomplete }}"
+  PLEX_CONTENT_DIRECTORY: "{{ service_paths.content }}"
+  PLEX_MEDIA_PATH: "{{ service_paths.content }}"
+  QBITTORRENT_MEDIA_PATH: "{{ service_paths.downloads }}"
+  QBITTORRENT_DOWNLOADS_PATH: "{{ service_paths.downloads }}"
+  QBITTORRENT_INCOMPLETE_PATH: "{{ service_paths.downloads }}/incomplete"
   TIMEZONE: Europe/Berlin
   HOST_IP: "0.0.0.0"

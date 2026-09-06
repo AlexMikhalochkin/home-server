@@ -33,7 +33,7 @@ laptop again.
 | `deploy_user` | github | Create the dedicated `github` deploy user/group (uid/gid picked by the OS — see note below), install its GitHub Actions authorized key |
 | `docker` | github | Docker Engine + Compose plugin, adds the deploy user to the `docker` group |
 | `storage` | github | **Opt-in** (`storage_disks`). Mount any number of existing disks by UUID/by-id; never reformats a disk that already has a filesystem |
-| `samba` | github | Share the environment's configured `service_paths.samba_share` directory (optional) |
+| `samba` | github | Share the configured downloads, TV series, and movies directories (optional) |
 | `docker_stack` | github | Clone `home-server`, `home-server-configuration`, `private-home-server`; render `.env`; install `start.sh`; `docker compose up` |
 
 ### Why the deploy user's uid/gid aren't hardcoded
@@ -170,7 +170,7 @@ Run individual parts with tags: `common`, `deploy_user`, `docker`, `storage`, `s
    Actions authorized key
 3. Installs Docker Engine + Compose plugin
 4. Mounts every disk listed in `storage_disks` (empty by default — see below)
-5. Configures Samba for the environment's `service_paths.samba_share` directory, if
+5. Configures Samba shares for downloads, TV series, and movies, if
    `samba_enabled: true`
 6. Clones `home-server` (public, HTTPS), `home-server-configuration` and
    `private-home-server` (private, one deploy key each) to `/opt/github-deploy/`
@@ -226,16 +226,18 @@ Then point services at whichever disk should hold their data:
 
 ```yaml
 service_paths:
-  plex_content: /media/media/content
-  qbittorrent_media: /media/media/content
-  qbittorrent_downloads: /media/downloads/torrents
-  qbittorrent_incomplete: /media/downloads/incomplete
-  samba_share: /media/media/share
+  content: /media/media/content
+  tv_series: /media/media/content/tv-series
+  movies: /media/media/content/movies
+  downloads: /media/downloads
 ```
 
 Ansible mounts the configured disks, creates all configured service directories, and
-renders the corresponding Compose variables into `.env`. It never formats an existing
-filesystem unless `format: true` is explicitly set and the device has no filesystem.
+renders the corresponding Compose variables into `.env`. qBittorrent uses `downloads`
+for completed and incomplete data, while Plex and Jellyfin read the `content`
+directory. The three directories are exposed as separate Samba shares. It never
+formats an existing filesystem unless `format: true` is explicitly set and the device
+has no filesystem.
 
 The private `private-home-server` Compose overlay must use the generated
 `QBITTORRENT_MEDIA_PATH`, `QBITTORRENT_DOWNLOADS_PATH`, and

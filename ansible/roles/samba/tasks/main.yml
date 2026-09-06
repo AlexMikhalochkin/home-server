@@ -20,13 +20,16 @@
     shell: /usr/sbin/nologin
   when: samba_create_user
 
-- name: Create Samba share directory
+- name: Create Samba share directories
   ansible.builtin.file:
-    path: "{{ samba_share_path }}"
+    path: "{{ item.path }}"
     state: directory
     owner: "{{ samba_user_uid }}"
     group: "{{ samba_user_gid }}"
     mode: "0775"
+  loop: "{{ samba_shares }}"
+  loop_control:
+    label: "{{ item.name }}"
 
 - name: Configure Samba
   ansible.builtin.template:

@@ -1,9 +1,16 @@
 ---
 samba_enabled: false
 samba_workgroup: WORKGROUP
-samba_share_name: sambashare
-samba_share_path: /opt/github-deploy/storage/samba
-samba_share_comment: Media
+samba_shares:
+  - name: downloads
+    path: /opt/github-deploy/storage/downloads
+    comment: qBittorrent downloads
+  - name: tv-series
+    path: /opt/github-deploy/storage/content/tv-series
+    comment: TV series
+  - name: movies
+    path: /opt/github-deploy/storage/content/movies
+    comment: Movies
 samba_create_user: false
 samba_user: media
 samba_user_uid: 1000
