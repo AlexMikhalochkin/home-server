@@ -1,6 +1,9 @@
 ---
 samba_enabled: false
 samba_workgroup: WORKGROUP
+samba_packages:
+  - samba
+  - samba-vfs-modules
 samba_shares:
   - name: downloads
     path: /opt/github-deploy/storage/downloads

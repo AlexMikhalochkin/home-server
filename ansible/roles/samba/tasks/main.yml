@@ -1,7 +1,7 @@
 ---
 - name: Install Samba
   ansible.builtin.apt:
-    name: samba
+    name: "{{ samba_packages }}"
     state: present
     update_cache: true
 

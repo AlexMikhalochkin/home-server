@@ -4,6 +4,12 @@
    security = user
    map to guest = Bad User
    dns proxy = no
+   server min protocol = SMB2_10
+   server max protocol = SMB3
+   ea support = yes
+   store dos attributes = yes
+   map acl inherit = yes
+   unix extensions = no
 
 {% for share in samba_shares %}
 [{{ share.name }}]
@@ -16,4 +22,16 @@
    force user = {{ samba_user }}
    create mask = 0664
    directory mask = 0775
+   force create mode = 0664
+   force directory mode = 0775
+   inherit permissions = yes
+   nt acl support = yes
+   vfs objects = acl_xattr fruit streams_xattr
+   fruit:metadata = stream
+   fruit:resource = file
+   fruit:encoding = native
+   fruit:posix_rename = yes
+   fruit:zero_file_id = yes
+   fruit:wipe_intentionally_left_blank_rfork = yes
+   fruit:delete_empty_adfiles = yes
 {% endfor %}
