@@ -34,23 +34,20 @@ samba_shares:
 samba_user: alex
 samba_create_user: false
 
-# External disks are optional. Add entries here when disks are attached, then point only
-# the services that should use them at their mount-point paths below.
-storage_disks: []
-
-# Example for the existing 1 TB media disk:
-# storage_disks:
-#   - name: media
-#     source: /dev/disk/by-uuid/b64016e5-92cb-40a8-93c9-a2bc59893cf1
-#     mount_point: /media/media
-#     fstype: ext4
-#     format: false
+# The existing 1 TB media disk is mounted separately from /media, which contains
+# host-managed data from the previous installation.
+storage_disks:
+  - name: media
+    source: /dev/disk/by-uuid/b64016e5-92cb-40a8-93c9-a2bc59893cf1
+    mount_point: /mnt/media
+    fstype: ext4
+    format: false
 
 service_paths:
-  content: /opt/github-deploy/storage/content
-  tv_series: /opt/github-deploy/storage/content/tv-series
-  movies: /opt/github-deploy/storage/content/movies
-  downloads: /opt/github-deploy/storage/downloads
+  content: /mnt/media/content
+  tv_series: /mnt/media/content/tv-series
+  movies: /mnt/media/content/movies
+  downloads: /mnt/media/downloads
 
 # zigbee2mqtt needs its USB Zigbee coordinator (/dev/ttyUSB0) physically moved from the old
 # server too. Flip to true once it's plugged into this host, then re-run site.yml — until

@@ -1,5 +1,4 @@
 ---
-# Disabled until the media disk is physically attached to this host.
 # External disks are optional. Each entry is independent, so services can use different
 # disks or continue using the system disk when this list is empty.
 storage_disks: []
@@ -8,7 +7,7 @@ storage_disks: []
 # storage_disks:
 #   - name: media
 #     source: /dev/disk/by-uuid/<uuid>
-#     mount_point: /media/media
+#     mount_point: /mnt/media
 #     fstype: ext4
 #     mount_opts: defaults
 #     format: false

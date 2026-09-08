@@ -212,12 +212,7 @@ add it by stable UUID or by-id path:
 storage_disks:
   - name: media
     source: /dev/disk/by-uuid/<uuid>
-    mount_point: /media/media
-    fstype: ext4
-    format: false
-  - name: downloads
-    source: /dev/disk/by-uuid/<other-uuid>
-    mount_point: /media/downloads
+    mount_point: /mnt/media
     fstype: ext4
     format: false
 ```
@@ -226,10 +221,10 @@ Then point services at whichever disk should hold their data:
 
 ```yaml
 service_paths:
-  content: /media/media/content
-  tv_series: /media/media/content/tv-series
-  movies: /media/media/content/movies
-  downloads: /media/downloads
+  content: /mnt/media/content
+  tv_series: /mnt/media/content/tv-series
+  movies: /mnt/media/content/movies
+  downloads: /mnt/media/downloads
 ```
 
 Ansible mounts the configured disks, creates all configured service directories, and
