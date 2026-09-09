@@ -71,14 +71,6 @@ services:
       - no-new-privileges:true
 
   jellyfin:
-    # Temporary workaround: the LAN DNS server resolves TMDB to loopback.
-    dns:
-      - 1.1.1.1
-      - 1.0.0.1
-    # Temporary workaround: the selected TMDB CDN edge is reachable from this region.
-    # Replace with VPN/proxy routing when available; CDN IPs can change.
-    extra_hosts:
-      - "image.tmdb.org:169.150.247.37"
     image: jellyfin/jellyfin:10.11.5
     container_name: jellyfin
     volumes:
@@ -94,6 +86,11 @@ services:
       - TZ=${TIMEZONE}
     ports:
       - '${HOST_IP}:8096:8096'
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+    extra_hosts:
+      - "image.tmdb.org:169.150.247.37"
     restart: unless-stopped
     # kics-scan ignore-line
     cap_add:
