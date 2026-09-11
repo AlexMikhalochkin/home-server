@@ -59,8 +59,6 @@ stack_env:
   PLEX_CONFIG_DIRECTORY: /opt/github-deploy/plex
   PLEX_CONTENT_DIRECTORY: "{{ service_paths.content }}"
   PLEX_MEDIA_PATH: "{{ service_paths.content }}"
-  QBITTORRENT_MEDIA_PATH: "{{ service_paths.content }}"
-  QBITTORRENT_DOWNLOADS_PATH: "{{ service_paths.downloads }}"
-  QBITTORRENT_INCOMPLETE_PATH: "{{ service_paths.downloads }}/incomplete"
+  QBITTORRENT_ROOT_PATH: /mnt/media
   TIMEZONE: Europe/Berlin
   HOST_IP: "0.0.0.0"
