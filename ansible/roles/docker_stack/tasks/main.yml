@@ -210,6 +210,7 @@
   ansible.builtin.stat:
     path: "{{ frigate_config_file }}"
   register: frigate_config
+  become: false
   when: frigate_config_file is defined
   tags: [deploy]
 
@@ -221,6 +222,7 @@
     fail_msg: >-
       Frigate requires a configuration at {{ frigate_config_file }}.
       Run full configure to render it from Vault, then rerun deploy.
+  become: false
   when: frigate_config_file is defined
   tags: [deploy]
 
