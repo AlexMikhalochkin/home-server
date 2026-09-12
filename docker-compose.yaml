@@ -86,9 +86,6 @@ services:
       - TZ=${TIMEZONE}
     ports:
       - '${HOST_IP}:8096:8096'
-    dns:
-      - 1.1.1.1
-      - 1.0.0.1
     extra_hosts:
       - "image.tmdb.org:169.150.247.37"
     restart: unless-stopped
@@ -102,6 +99,9 @@ services:
     # kics-scan ignore-line
     devices:
       - /dev/dri:/dev/dri
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
     profiles: [ chris ]
     security_opt:
       - no-new-privileges:true
