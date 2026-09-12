@@ -1,0 +1,10 @@
+---
+# Encrypt the real file as ansible/vault/newton-frigate.yml.
+# Keep complete RTSP URLs here so special characters in passwords are handled
+# by the camera URL rather than interpolated into an unescaped template value.
+camera1:
+  rtsp_main: "rtsp://USERNAME:PASSWORD@192.168.1.247:554/Streaming/Channels/1"
+  rtsp_detect: "rtsp://USERNAME:PASSWORD@192.168.1.247:554/Streaming/Channels/102"
+camera2:
+  rtsp_main: "rtsp://USERNAME:PASSWORD@192.168.1.246:554/Streaming/Channels/1"
+  rtsp_detect: "rtsp://USERNAME:PASSWORD@192.168.1.246:554/Streaming/Channels/102"

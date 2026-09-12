@@ -67,7 +67,12 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
+          inventory="inventory/hosts.yml"
+          if [ "${{ inputs.environment }}" = "newton" ]; then
+            inventory="inventory/hosts-newton.yml"
+          fi
           ansible-playbook playbooks/site.yml \
+            -i "$inventory" \
             --tags deploy \
             -e ansible_host="${{ vars.TAILSCALE_TARGET_HOST }}" \
             -e ansible_user="${{ vars.SSH_USER }}" \

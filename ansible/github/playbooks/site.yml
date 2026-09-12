@@ -36,6 +36,14 @@
         file: "{{ playbook_dir }}/../../vault/secrets.yml"
       become: false
 
+    - name: Load encrypted Newton Frigate secrets
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../../vault/newton-frigate.yml"
+        name: newton_frigate_vault
+      become: false
+      when: newton_frigate_enabled | default(false) | bool
+      tags: [prepare]
+
   roles:
     - role: common
       tags: [common]

@@ -1,0 +1,27 @@
+name: home-server-newton
+
+services:
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:0.18.0
+    container_name: frigate
+    volumes:
+      - ${FRIGATE_CONFIG_DIRECTORY}:/config
+      - ${FRIGATE_STORAGE_DIRECTORY}:/media/frigate
+      - type: tmpfs
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    environment:
+      TZ: ${TIMEZONE}
+    ports:
+      - '${HOST_IP}:8971:8971'
+      - '${HOST_IP}:5000:5000'
+      - '${HOST_IP}:8554:8554'
+      - '${HOST_IP}:8555:8555/tcp'
+      - '${HOST_IP}:8555:8555/udp'
+    restart: unless-stopped
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+      - /dev/dri/card0:/dev/dri/card0
+    profiles: [ newton ]
+    shm_size: "512mb"

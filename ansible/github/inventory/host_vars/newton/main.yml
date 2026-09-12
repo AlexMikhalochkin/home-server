@@ -1,0 +1,47 @@
+---
+# Non-secret configuration for the isolated Newton Frigate host.
+ansible_become_exe: /usr/bin/sudo
+docker_compose_profile: newton
+docker_compose_files:
+  - "{{ home_server_dir }}/docker-compose.newton.yaml"
+home_server_configuration_enabled: false
+private_home_server_enabled: false
+docker_stack_start_script_path: "{{ home_server_dir }}/start.sh"
+deploy_user: github
+deploy_branch: main
+
+timezone: Europe/Berlin
+vpn_enabled: false
+zigbee_enabled: false
+
+docker_users:
+  - github
+  - alex
+
+# Generate a Newton-specific keypair before full configure and commit only its public
+# half here. The private half is the Newton GitHub environment's SSH_PRIVATE_KEY secret.
+github_ci_ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC5r1up8uvV8m2PdwdqD2q6YCVfGlIKsjb0aCCuCFOsA newton-github-actions"
+
+samba_enabled: false
+storage_disks: []
+
+# These paths are independent of Chris media/storage paths and are traversable by the
+# restricted github deploy user. Frigate config.yaml is provisioned privately on the host.
+newton_frigate_enabled: true
+stack_env:
+  FRIGATE_CONFIG_DIRECTORY: "{{ deploy_base_dir }}/newton/frigate/config"
+  FRIGATE_STORAGE_DIRECTORY: "{{ deploy_base_dir }}/newton/frigate/storage"
+  TIMEZONE: Europe/Berlin
+  HOST_IP: "0.0.0.0"
+frigate_config_file: "{{ stack_env.FRIGATE_CONFIG_DIRECTORY }}/config.yaml"
+frigate_config_template: frigate-config.yaml.j2
+
+stack_directories:
+  - path: "{{ stack_env.FRIGATE_CONFIG_DIRECTORY }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    recurse: true
+  - path: "{{ stack_env.FRIGATE_STORAGE_DIRECTORY }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    recurse: true

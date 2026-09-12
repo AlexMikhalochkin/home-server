@@ -1,0 +1,12 @@
+---
+# Copy this file to local.yml — gitignored, never committed.
+#
+#   cp local.yml.example local.yml
+
+# Set the Newton server's Tailscale address for local GitHub playbook runs.
+ansible_host: 100.x.x.x
+ansible_user: alex
+
+# Optional — if omitted, use --ask-pass / --ask-become-pass.
+# ansible_password: "your_ssh_password"
+# ansible_become_password: "your_sudo_password"

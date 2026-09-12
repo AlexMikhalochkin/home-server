@@ -1,0 +1,10 @@
+---
+# Label for this server in the Tailscale admin console only (--hostname=newton).
+# Ansible and SSH use ansible_host from local.yml.
+tailscale_hostname: newton
+ansible_become_exe: /usr/bin/sudo
+
+# Generate a Newton-specific GitHub Actions keypair and replace this value with its
+# public half before running the full GitHub deployment. The private half belongs in
+# the Newton GitHub environment's SSH_PRIVATE_KEY secret.
+github_ci_ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC5r1up8uvV8m2PdwdqD2q6YCVfGlIKsjb0aCCuCFOsA newton-github-actions"

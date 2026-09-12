@@ -1,0 +1,5 @@
+all:
+  children:
+    home_servers:
+      hosts:
+        newton:

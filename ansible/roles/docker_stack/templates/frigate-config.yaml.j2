@@ -1,0 +1,78 @@
+tls:
+  enabled: false
+
+mqtt:
+  enabled: false
+
+ffmpeg:
+  hwaccel_args: preset-vaapi
+
+go2rtc:
+  streams:
+    camera1:
+      - "{{ newton_frigate_vault.camera1.rtsp_main }}"
+    camera2:
+      - "{{ newton_frigate_vault.camera2.rtsp_main }}"
+
+cameras:
+  camera1:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: "{{ newton_frigate_vault.camera1.rtsp_detect }}"
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+        - path: "{{ newton_frigate_vault.camera1.rtsp_main }}"
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+    detect:
+      enabled: false
+      width: 704
+      height: 576
+      fps: 1
+    motion:
+      enabled: false
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 14
+          mode: motion
+    snapshots:
+      enabled: true
+      retain:
+        default: 14
+
+  camera2:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: "{{ newton_frigate_vault.camera2.rtsp_detect }}"
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+        - path: "{{ newton_frigate_vault.camera2.rtsp_main }}"
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+    detect:
+      enabled: false
+      width: 704
+      height: 576
+      fps: 1
+    motion:
+      enabled: false
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 14
+          mode: motion
+    snapshots:
+      enabled: true
+      retain:
+        default: 14
+
+version: 0.18-0

@@ -21,7 +21,8 @@ laptop again.
 - **Inventory** — list of servers (`inventory/hosts.yml`). No IP addresses in git.
 - **Playbook** — checklist of tasks (`playbooks/*.yml`).
 - **Role** — reusable tasks (`../roles/`).
-- **Vault** — encrypted secrets in git (`../vault/secrets.yml`).
+- **Vault** — encrypted secrets in git (`../vault/secrets.yml` and the Newton-specific
+  `../vault/newton-frigate.yml`).
 
 ## Roles
 
@@ -34,7 +35,7 @@ laptop again.
 | `docker` | github | Docker Engine + Compose plugin, adds the deploy user to the `docker` group |
 | `storage` | github | **Opt-in** (`storage_disks`). Mount any number of existing disks by UUID/by-id; never reformats a disk that already has a filesystem |
 | `samba` | github | Share the configured downloads, TV series, and movies directories (optional) |
-| `docker_stack` | github | Clone `home-server`, `home-server-configuration`, `private-home-server`; render `.env`; install `start.sh`; `docker compose up` |
+| `docker_stack` | github | Select the inventory's Compose files; clone only enabled repositories; render `.env`; install `start.sh`; `docker compose up` |
 
 ### Why the deploy user's uid/gid aren't hardcoded
 
@@ -48,6 +49,62 @@ a free system uid/gid and feeds the *actual* result into `.env` as `DEPLOY_UID`/
 so it works regardless of what the base image already allocated.
 
 ## One-time setup
+
+### Newton environment
+
+Newton is selected with the `newton` choice in either GitHub Actions workflow.
+Unlike Chris, its inventory uses `hosts-newton.yml` and the Docker stack role
+uses only `docker-compose.newton.yaml`; the private service overlay and Chris
+storage are not cloned, mounted, or started. The first version exposes Frigate
+on ports `8971`, `5000`, `8554`, and `8555` (TCP/UDP), and passes through
+`/dev/dri/renderD128` and `/dev/dri/card0`.
+
+Create a dedicated GitHub Actions keypair for Newton:
+
+```bash
+ssh-keygen -t ed25519 -f gh_actions_newton -N ""
+```
+
+Put its public key in both
+`bootstrap/inventory/host_vars/newton/main.yml` and
+`github/inventory/host_vars/newton/main.yml`, and put the private key in the
+`SSH_PRIVATE_KEY` secret in the Newton GitHub environment. The same key is
+installed for the bootstrap admin account and the restricted `github` deploy
+account. Do not reuse or replace Chris's key unless that is an intentional
+operational decision.
+
+Before running **Ansible Configure** for Newton, create the encrypted
+`vault/newton-frigate.yml` from `vault/newton-frigate.yml.example` and populate
+the four RTSP URLs from the validated live configuration. Camera credentials
+must remain inside that encrypted file. The
+`FRIGATE_CONFIG_DIRECTORY` and `FRIGATE_STORAGE_DIRECTORY` paths are rendered
+into `.env`, and full configure renders
+`/opt/github-deploy/newton/frigate/config/config.yaml` from Vault with
+restrictive permissions. Ansible creates both directories without overwriting
+existing Frigate state.
+
+When migrating the validated live prototype to Ansible management, stop and
+remove its manually created `frigate` container before the first Compose
+deployment. Populate `vault/newton-frigate.yml` from the validated camera URLs
+before running full configure. Copy any state or recordings you intend to retain
+into the new storage path. The Newton Compose file recreates the container with
+the same name and ports.
+
+Newton's GitHub environment needs these values:
+
+| Name | Kind | Purpose |
+|------|------|---------|
+| `TAILSCALE_TARGET_HOST` | var | Newton's Tailscale IP (not its `192.168.1.x` LAN address) |
+| `ADMIN_SSH_USER` | var | Sudo-capable bootstrap admin (currently `alex`) |
+| `SSH_USER` | var | Restricted deploy user for fast deploys (currently `github`) |
+| `TAILSCALE_TAG` | var | Tailscale ACL tag for the runner |
+| `SSH_PRIVATE_KEY` | secret | Newton GitHub Actions keypair private half |
+| `ANSIBLE_BECOME_PASSWORD` | secret | Admin user's sudo password (Configure only) |
+| `ANSIBLE_VAULT_PASSWORD` | secret | `ansible/.vault-pass` (Configure only) |
+| `TS_OAUTH_CLIENT_ID` / `TS_AUDIENCE` | secret | Tailscale GitHub Action credentials |
+
+Newton does not need the private-repository deploy-key secrets for the first
+version because neither private repository is used.
 
 ### 1. Generate the GitHub Actions SSH keypair
 
@@ -162,6 +219,8 @@ ansible-playbook playbooks/site.yml \
 ```
 
 Run individual parts with tags: `common`, `deploy_user`, `docker`, `storage`, `samba`, `stack`.
+For a local Newton run, pass `-i inventory/hosts-newton.yml`; the default inventory remains
+the Chris inventory for backwards compatibility.
 
 ### What `site.yml` does
 
@@ -172,12 +231,13 @@ Run individual parts with tags: `common`, `deploy_user`, `docker`, `storage`, `s
 4. Mounts every disk listed in `storage_disks` (empty by default — see below)
 5. Configures Samba shares for downloads, TV series, and movies, if
    `samba_enabled: true`
-6. Clones `home-server` (public, HTTPS), `home-server-configuration` and
-   `private-home-server` (private, one deploy key each) to `/opt/github-deploy/`
+6. Clones `home-server` (public, HTTPS), plus the enabled private repositories, to
+   `/opt/github-deploy/`
 7. Renders `/opt/github-deploy/home-server/.env` from inventory vars
-8. Installs `/opt/github-deploy/home-server-configuration/start.sh` (manual break-glass
-   fallback only — see below)
-9. Runs `docker compose -f home-server/docker-compose.yaml -f private-home-server/docker-compose.yaml --profile chris pull` and `up -d`
+8. Installs the inventory-selected `start.sh` (manual break-glass fallback only — see below)
+9. Runs the inventory-selected Compose files and profiles (`docker-compose.yaml` plus the
+   private overlay for Chris; only `docker-compose.newton.yaml` and `newton` for Newton)
+   with `pull` and `up -d`
 
 ### Full configure vs. fast deploy — same tasks, different tags
 

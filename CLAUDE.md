@@ -65,7 +65,8 @@ Services are grouped by profile to control which run on a given host:
 | `chris` | dozzle, grafana, home-assistant, jellyfin, matterbridge, mosquitto, node-exporter, plex, prometheus, traefik |
 | `chris-vpn` | openvpn (optional) |
 | `chris-zigbee` | zigbee2mqtt (only when USB dongle physically present) |
-| `newton`, `local` | mosquitto variants for other hosts |
+| `newton` | Frigate-only Newton environment (selected through its dedicated Compose file) |
+| `local` | mosquitto variants for other hosts |
 
 The `chris-vpn` profile is started in a separate best-effort `docker compose up` pass so VPN failures cannot abort the rest of the stack. Home Assistant and Jellyfin use their own Docker bridge networking and are not dependent on OpenVPN.
 

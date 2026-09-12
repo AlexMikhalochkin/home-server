@@ -1,15 +1,24 @@
 ---
-- name: Require GitHub deploy keys for private configuration repositories
+- name: Require GitHub deploy key for private configuration repository
   ansible.builtin.assert:
     that:
       - github_clone_ssh_key_home_server_configuration is defined
       - github_clone_ssh_key_home_server_configuration | length > 0
+    fail_msg: >-
+      home-server-configuration is private. Add github_clone_ssh_key_home_server_configuration
+      to ansible/vault/secrets.yml (a read-only deploy key).
+  when: home_server_configuration_enabled | bool
+  tags: [prepare]
+
+- name: Require GitHub deploy key for private service repository
+  ansible.builtin.assert:
+    that:
       - github_clone_ssh_key_private_home_server is defined
       - github_clone_ssh_key_private_home_server | length > 0
     fail_msg: >-
-      home-server-configuration and private-home-server are private repos. Add
-      github_clone_ssh_key_home_server_configuration and github_clone_ssh_key_private_home_server
-      to ansible/vault/secrets.yml (one deploy key per repo, each with read-only access).
+      private-home-server is private. Add github_clone_ssh_key_private_home_server
+      to ansible/vault/secrets.yml (a read-only deploy key).
+  when: private_home_server_enabled | bool
   tags: [prepare]
 
 - name: Create deploy base directory
@@ -38,11 +47,16 @@
     group: "{{ deploy_user }}"
     mode: "0600"
   loop:
-    - { file: id_ed25519_home_server_configuration, key: "{{ github_clone_ssh_key_home_server_configuration }}" }
-    - { file: id_ed25519_private_home_server, key: "{{ github_clone_ssh_key_private_home_server }}" }
+    - file: id_ed25519_home_server_configuration
+      key: "{{ github_clone_ssh_key_home_server_configuration }}"
+      enabled: "{{ home_server_configuration_enabled }}"
+    - file: id_ed25519_private_home_server
+      key: "{{ github_clone_ssh_key_private_home_server }}"
+      enabled: "{{ private_home_server_enabled }}"
   loop_control:
     label: "{{ item.file }}"
   no_log: true
+  when: item.enabled | bool
   tags: [prepare]
 
 - name: Configure SSH host aliases for the GitHub deploy keys
@@ -67,6 +81,7 @@
         IdentityFile {{ deploy_base_dir }}/.ssh/id_ed25519_private_home_server
         IdentitiesOnly yes
         StrictHostKeyChecking accept-new
+  when: home_server_configuration_enabled | bool or private_home_server_enabled | bool
   tags: [prepare]
 
 - name: Clone or update home-server repository (public, HTTPS)
@@ -94,6 +109,7 @@
   register: home_server_configuration_branch_check
   changed_when: false
   failed_when: false
+  when: home_server_configuration_enabled | bool
   tags: [deploy]
 
 - name: Clone or update home-server-configuration repository (private)
@@ -106,6 +122,7 @@
     force: true
   become: true
   become_user: "{{ deploy_user }}"
+  when: home_server_configuration_enabled | bool
   tags: [deploy]
 
 - name: Check whether deploy_branch exists on private-home-server
@@ -115,6 +132,7 @@
   register: private_home_server_branch_check
   changed_when: false
   failed_when: false
+  when: private_home_server_enabled | bool
   tags: [deploy]
 
 - name: Clone or update private-home-server repository (private, adds qbittorrent)
@@ -127,6 +145,7 @@
     force: true
   become: true
   become_user: "{{ deploy_user }}"
+  when: private_home_server_enabled | bool
   tags: [deploy]
 
 - name: Create stack data directories
@@ -154,18 +173,62 @@
 - name: Install deploy start script
   ansible.builtin.template:
     src: start.sh.j2
-    dest: "{{ home_server_configuration_dir }}/start.sh"
+    dest: "{{ docker_stack_start_script_path }}"
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0750"
   tags: [prepare]
 
+- name: Require encrypted Newton Frigate secrets
+  ansible.builtin.assert:
+    that:
+      - newton_frigate_vault is defined
+      - newton_frigate_vault.camera1 is defined
+      - newton_frigate_vault.camera2 is defined
+    fail_msg: >-
+      Newton requires ansible/vault/newton-frigate.yml with encrypted RTSP URLs
+      for both cameras before full configure.
+  when:
+    - frigate_config_template | length > 0
+    - frigate_config_file | length > 0
+  tags: [prepare]
+
+- name: Render Frigate configuration from encrypted secrets
+  ansible.builtin.template:
+    src: "{{ frigate_config_template }}"
+    dest: "{{ frigate_config_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  when:
+    - frigate_config_template | length > 0
+    - frigate_config_file | length > 0
+  tags: [prepare]
+
+- name: Check for externally supplied Frigate configuration
+  ansible.builtin.stat:
+    path: "{{ frigate_config_file }}"
+  register: frigate_config
+  when: frigate_config_file is defined
+  tags: [deploy]
+
+- name: Require externally supplied Frigate configuration
+  ansible.builtin.assert:
+    that:
+      - frigate_config.stat.exists
+      - frigate_config.stat.isreg
+    fail_msg: >-
+      Frigate requires a configuration at {{ frigate_config_file }}.
+      Run full configure to render it from Vault, then rerun deploy.
+  when: frigate_config_file is defined
+  tags: [deploy]
+
 - name: Pull Docker images
   ansible.builtin.command:
     cmd: >-
       docker compose
-      -f {{ home_server_dir }}/docker-compose.yaml
-      -f {{ private_home_server_dir }}/docker-compose.yaml
+      {% for compose_file in docker_compose_files %}-f {{ compose_file }} {% endfor %}
       --env-file {{ home_server_dir }}/.env
       {% for profile in docker_compose_all_profiles %}--profile {{ profile }} {% endfor %}
       pull
@@ -180,8 +243,7 @@
   ansible.builtin.command:
     cmd: >-
       docker compose
-      -f {{ home_server_dir }}/docker-compose.yaml
-      -f {{ private_home_server_dir }}/docker-compose.yaml
+      {% for compose_file in docker_compose_files %}-f {{ compose_file }} {% endfor %}
       --env-file {{ home_server_dir }}/.env
       {% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %}
       up -d --remove-orphans
@@ -199,8 +261,7 @@
   ansible.builtin.command:
     cmd: >-
       docker compose
-      -f {{ home_server_dir }}/docker-compose.yaml
-      -f {{ private_home_server_dir }}/docker-compose.yaml
+      {% for compose_file in docker_compose_files %}-f {{ compose_file }} {% endfor %}
       --env-file {{ home_server_dir }}/.env
       --profile {{ vpn_profile }}
       up -d --remove-orphans
@@ -229,8 +290,7 @@
   ansible.builtin.command:
     cmd: >-
       docker compose
-      -f {{ home_server_dir }}/docker-compose.yaml
-      -f {{ private_home_server_dir }}/docker-compose.yaml
+      {% for compose_file in docker_compose_files %}-f {{ compose_file }} {% endfor %}
       {% for profile in docker_compose_all_profiles %}--profile {{ profile }} {% endfor %}
       ps
     chdir: "{{ home_server_dir }}"
