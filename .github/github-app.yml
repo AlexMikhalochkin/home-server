@@ -1,0 +1,8 @@
+scripts:
+  - name: Lint
+    command: "docker run -t --rm -v ${PWD}:/app zavoloklom/dclint /app/docker-compose.yaml"
+  - name: KICS
+    command: "docker run -t --rm -v \"./docker-compose.yaml\":/path/docker-compose.yaml checkmarx/kics scan -p /path -o \"/path/\""
+automation:
+  auto_issue_session: true
+  remote_control: false
