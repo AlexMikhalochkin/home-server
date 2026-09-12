@@ -235,8 +235,9 @@ formats an existing filesystem unless `format: true` is explicitly set and the d
 has no filesystem.
 
 The private `private-home-server` Compose overlay must use the generated
-`QBITTORRENT_MEDIA_PATH`, `QBITTORRENT_DOWNLOADS_PATH`, and
-`QBITTORRENT_INCOMPLETE_PATH` variables instead of hardcoded `/media/disk/...` paths.
+`QBITTORRENT_ROOT_PATH` variable instead of hardcoded `/media/disk/...` paths.
+The root is mounted at `/data` so qBittorrent can move completed downloads into
+the media library without copying between Docker mounts.
 
 ## Configuration layers
 
