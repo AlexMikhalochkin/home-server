@@ -32,6 +32,7 @@ docker_compose_pull: true
 docker_compose_up: true
 frigate_config_template: ""
 frigate_config_file: ""
+newton_frigate_enabled: false
 
 # zigbee2mqtt needs a physical USB Zigbee coordinator (/dev/ttyUSB0). Like the media disk,
 # it's meant to be moved from the old server rather than replaced, and isn't attached yet.

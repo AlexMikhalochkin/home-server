@@ -189,6 +189,7 @@
       Newton requires ansible/vault/newton-frigate.yml with encrypted RTSP URLs
       for both cameras before full configure.
   when:
+    - newton_frigate_enabled | bool
     - frigate_config_template | length > 0
     - frigate_config_file | length > 0
   tags: [prepare]
@@ -202,6 +203,7 @@
     mode: "0600"
   no_log: true
   when:
+    - newton_frigate_enabled | bool
     - frigate_config_template | length > 0
     - frigate_config_file | length > 0
   tags: [prepare]
@@ -211,7 +213,9 @@
     path: "{{ frigate_config_file }}"
   register: frigate_config
   become: false
-  when: frigate_config_file is defined
+  when:
+    - newton_frigate_enabled | bool
+    - frigate_config_file | length > 0
   tags: [deploy]
 
 - name: Require externally supplied Frigate configuration
@@ -223,7 +227,9 @@
       Frigate requires a configuration at {{ frigate_config_file }}.
       Run full configure to render it from Vault, then rerun deploy.
   become: false
-  when: frigate_config_file is defined
+  when:
+    - newton_frigate_enabled | bool
+    - frigate_config_file | length > 0
   tags: [deploy]
 
 - name: Pull Docker images
