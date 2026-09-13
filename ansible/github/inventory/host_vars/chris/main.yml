@@ -25,6 +25,9 @@ samba_shares:
   - name: downloads
     path: "{{ service_paths.downloads }}"
     comment: qBittorrent downloads
+  - name: media2
+    path: "{{ service_paths.media2 }}"
+    comment: Additional media storage
   - name: tv-series
     path: "{{ service_paths.tv_series }}"
     comment: TV series
@@ -42,12 +45,18 @@ storage_disks:
     mount_point: /mnt/media
     fstype: ext4
     format: false
+  - name: media2
+    source: /dev/disk/by-uuid/58fec2b6-dcec-4b72-96e7-f5e16476567c
+    mount_point: /mnt/media2
+    fstype: ext4
+    format: false
 
 service_paths:
   content: /mnt/media/content
   tv_series: /mnt/media/content/tv-series
   movies: /mnt/media/content/movies
   downloads: /mnt/media/downloads
+  media2: /mnt/media2
 
 # zigbee2mqtt needs its USB Zigbee coordinator (/dev/ttyUSB0) physically moved from the old
 # server too. Flip to true once it's plugged into this host, then re-run site.yml — until
@@ -59,6 +68,7 @@ stack_env:
   PLEX_CONFIG_DIRECTORY: /opt/github-deploy/plex
   PLEX_CONTENT_DIRECTORY: "{{ service_paths.content }}"
   PLEX_MEDIA_PATH: "{{ service_paths.content }}"
+  MEDIA2_PATH: "{{ service_paths.media2 }}"
   QBITTORRENT_ROOT_PATH: /mnt/media
   TIMEZONE: Europe/Berlin
   HOST_IP: "0.0.0.0"

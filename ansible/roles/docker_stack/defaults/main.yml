@@ -61,6 +61,7 @@ service_paths:
   tv_series: "{{ deploy_base_dir }}/storage/content/tv-series"
   movies: "{{ deploy_base_dir }}/storage/content/movies"
   downloads: "{{ deploy_base_dir }}/storage/downloads"
+  media2: "{{ deploy_base_dir }}/storage/media2"
 
 # Rendered to home-server/.env — override per host in inventory. Kept as siblings of
 # home-server (not nested inside it) so they're untouched by git operations on that repo.
@@ -102,6 +103,9 @@ stack_directories:
     owner: 1000
     group: 1000
   - path: "{{ service_paths.downloads }}/incomplete"
+    owner: 1000
+    group: 1000
+  - path: "{{ service_paths.media2 }}"
     owner: 1000
     group: 1000
 
