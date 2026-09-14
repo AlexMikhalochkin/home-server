@@ -53,6 +53,9 @@ services:
   home-assistant:
     image: homeassistant/home-assistant:2026.1.1
     container_name: home-assistant
+    depends_on:
+      openvpn:
+        condition: service_healthy
     volumes:
       - ${HOME_ASSISTANT_CONFIGURATION_DIRECTORY}:/config
       - ../home-server-configuration/home-assistant/configuration.yaml:/config/configuration.yaml
@@ -61,12 +64,11 @@ services:
       - ../home-server-configuration/home-assistant/scenes.yaml:/config/scenes.yaml
     environment:
       - TZ=${TIMEZONE}
-    ports:
-      - '${HOST_IP}:8123:8123'
+    network_mode: "service:openvpn"
     restart: unless-stopped
     cap_drop:
       - ALL
-    profiles: [ chris ]
+    profiles: [ chris-vpn ]
     security_opt:
       - no-new-privileges:true
 
@@ -160,7 +162,9 @@ services:
       - PUID=1030
       - PGID=100
       - TZ=${TIMEZONE}
+      - DEFAULT_GATEWAY=false
     ports:
+      - '${HOST_IP}:8123:8123'
       - '7359:7359/udp'
     extra_hosts:
       - host.docker.internal:host-gateway
@@ -172,9 +176,6 @@ services:
       - SETUID
     cap_drop:
       - ALL
-    dns:
-      - 8.8.4.4
-      - 8.8.8.8
     profiles: [ chris-vpn ]
     read_only: true
     security_opt:

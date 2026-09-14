@@ -42,7 +42,7 @@ newton_frigate_enabled: false
 zigbee_enabled: false
 zigbee_profile: chris-zigbee
 
-# openvpn (and home-assistant/jellyfin, which share its network namespace) depend on an
+# openvpn and home-assistant, which uses its network namespace for selected destinations, depend on an
 # external VPN provider account. If that account/credentials have a problem, `docker compose
 # up` fails for the *entire* stack, not just this group (same class of issue as zigbee2mqtt
 # above) — so they sit behind their own profile and are started in a separate, best-effort

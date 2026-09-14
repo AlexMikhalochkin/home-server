@@ -7,9 +7,9 @@ deploy_branch: main
 
 timezone: Europe/Berlin
 
-# Home Assistant and Jellyfin run independently of the optional VPN. Re-enable this
-# when VPN credentials are available and a routed VPN design is in place.
-vpn_enabled: false
+# Home Assistant uses the VPN namespace for selected Home Connect destinations while
+# retaining the direct Docker gateway for normal LAN and internet traffic.
+vpn_enabled: true
 
 docker_users:
   - github

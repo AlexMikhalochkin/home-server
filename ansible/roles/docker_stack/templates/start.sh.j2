@@ -55,7 +55,7 @@ docker compose \
   up -d --remove-orphans
 
 {% if vpn_enabled | bool %}
-# OpenVPN is optional and independent of Home Assistant and Jellyfin. Start it separately
+# OpenVPN and the VPN-routed Home Assistant profile are optional. Start them separately
 # and best-effort so missing credentials cannot abort the normal stack.
 if ! docker compose \
   "${COMPOSE_FILE_ARGS[@]}" \
