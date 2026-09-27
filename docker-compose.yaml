@@ -4,7 +4,7 @@ name: home-server
 
 services:
   dozzle:
-    image: amir20/dozzle:v9.0.1
+    image: amir20/dozzle:v11.1.1
     container_name: dozzle
     volumes:
       # kics-scan ignore-line
@@ -19,7 +19,7 @@ services:
       - no-new-privileges:true
 
   grafana:
-    image: grafana/grafana:12.3
+    image: grafana/grafana:13.2.2
     container_name: grafana
     volumes:
       # kics-scan ignore-line
@@ -51,7 +51,7 @@ services:
       - no-new-privileges:true
 
   home-assistant:
-    image: homeassistant/home-assistant:2026.1.1
+    image: homeassistant/home-assistant:2026.9.4
     container_name: home-assistant
     depends_on:
       openvpn:
@@ -73,7 +73,7 @@ services:
       - no-new-privileges:true
 
   jellyfin:
-    image: jellyfin/jellyfin:10.11.5
+    image: jellyfin/jellyfin:12.1
     container_name: jellyfin
     volumes:
       # kics-scan ignore-line
@@ -110,7 +110,7 @@ services:
       - no-new-privileges:true
 
   mosquitto:
-    image: eclipse-mosquitto:2.0.22
+    image: eclipse-mosquitto:2.1.2-alpine
     container_name: mosquitto
     volumes:
       - ../home-server-configuration/mosquitto/certs:/etc/mosquitto/certs
@@ -132,7 +132,7 @@ services:
       - no-new-privileges:true
 
   node-exporter:
-    image: prom/node-exporter:v1.10.2
+    image: prom/node-exporter:v1.12.1
     container_name: node-exporter
     volumes:
       # kics-scan ignore-line
@@ -187,7 +187,7 @@ services:
     tty: true
 
   plex:
-    image: linuxserver/plex:1.43.2
+    image: linuxserver/plex:1.43.4
     container_name: plex
     volumes:
       - ${PLEX_CONFIG_DIRECTORY}/config:/config
@@ -221,7 +221,7 @@ services:
       - no-new-privileges:true
 
   prometheus:
-    image: prom/prometheus:v3.9.1
+    image: prom/prometheus:v3.15.0
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -245,7 +245,7 @@ services:
       - no-new-privileges:true
 
   traefik:
-    image: traefik:v3.6
+    image: traefik:v3.7.13
     container_name: traefik
     volumes:
       # kics-scan ignore-line
@@ -274,7 +274,7 @@ services:
       - no-new-privileges:true
 
   zigbee2mqtt:
-    image: koenkk/zigbee2mqtt:2.7.1
+    image: koenkk/zigbee2mqtt:2.14.1
     container_name: zigbee2mqtt
     volumes:
       - ../home-server-configuration/zigbee2mqtt:/app/data
