@@ -1,7 +1,7 @@
 api:
   dashboard: true
   # insecure: true is intentional for LAN-only access
-  # Dashboard is only accessible on internal network (traefik.home hostname)
+  # Keep direct dashboard access on host port 8082 during the hostname transition.
   # For production/public deployments, implement proper authentication
   insecure: true
 
@@ -12,6 +12,9 @@ entryPoints:
 providers:
   docker:
     exposedByDefault: false
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
 
 metrics:
   prometheus: {}

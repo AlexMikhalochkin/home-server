@@ -251,6 +251,7 @@ services:
       # kics-scan ignore-line
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
     # kics-scan ignore-line
     ports:
       # kics-scan ignore-line

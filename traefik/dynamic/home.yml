@@ -1,0 +1,66 @@
+http:
+  routers:
+    dozzle:
+      entryPoints: [web]
+      rule: "Host(`dozzle.home.arpa`)"
+      service: dozzle
+    grafana:
+      entryPoints: [web]
+      rule: "Host(`grafana.home.arpa`)"
+      service: grafana
+    home-assistant:
+      entryPoints: [web]
+      rule: "Host(`ha.home.arpa`)"
+      service: home-assistant
+    jellyfin:
+      entryPoints: [web]
+      rule: "Host(`jellyfin.home.arpa`)"
+      service: jellyfin
+    plex:
+      entryPoints: [web]
+      rule: "Host(`plex.home.arpa`)"
+      service: plex
+    qbittorrent:
+      entryPoints: [web]
+      rule: "Host(`qbt.home.arpa`)"
+      service: qbittorrent
+    dashboard:
+      entryPoints: [web]
+      rule: "Host(`traefik.home.arpa`)"
+      service: api@internal
+    zigbee2mqtt:
+      entryPoints: [web]
+      rule: "Host(`z2m.home.arpa`)"
+      service: zigbee2mqtt
+
+  services:
+    dozzle:
+      loadBalancer:
+        servers:
+          - url: http://dozzle:8080
+    grafana:
+      loadBalancer:
+        servers:
+          - url: http://grafana:3000
+    home-assistant:
+      loadBalancer:
+        servers:
+          # Home Assistant shares OpenVPN's network namespace.
+          - url: http://openvpn:8123
+    jellyfin:
+      loadBalancer:
+        servers:
+          - url: http://jellyfin:8096
+    plex:
+      loadBalancer:
+        servers:
+          # Plex uses host networking rather than the Compose bridge.
+          - url: http://host.docker.internal:32400
+    qbittorrent:
+      loadBalancer:
+        servers:
+          - url: http://qbittorrent:6004
+    zigbee2mqtt:
+      loadBalancer:
+        servers:
+          - url: http://zigbee2mqtt:8080

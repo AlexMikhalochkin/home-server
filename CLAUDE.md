@@ -85,6 +85,8 @@ The `chris-vpn` profile is started in a separate best-effort `docker compose up`
 
 ### Observability
 
-- Traefik reverse proxy on port 80, dashboard on port 8082. Routes: `grafana.home`, `traefik.home`.
+- Traefik reverse proxy on port 80, dashboard on port 8082. HTTP service routes are in
+  `traefik/dynamic/home.yml` using `*.home.arpa`; legacy `grafana.home` and `traefik.home`
+  rules and all direct IP/port access are retained. See README for DNS and HA proxy prerequisites.
 - Prometheus scrapes `node-exporter:9100` and `traefik:8080` every 15s.
 - Dozzle at port 8888 for real-time container logs.
