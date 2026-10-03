@@ -14,6 +14,13 @@ HOME_SERVER_DIR="${BASE}/home-server"
 HOME_SERVER_CONFIGURATION_DIR="${BASE}/home-server-configuration"
 PRIVATE_HOME_SERVER_DIR="${BASE}/private-home-server"
 
+{% if docker_stack_storage_containers | length > 0 %}
+if ! mountpoint -q "{{ docker_stack_storage_mount_path }}"; then
+    echo "ERROR: {{ docker_stack_storage_mount_path }} is not mounted; refusing to start storage-dependent containers."
+    exit 1
+fi
+{% endif %}
+
 # Switch a repo to $BRANCH if it exists on origin, otherwise fall back to main.
 # Args: $1 = repo path, $2 = required (1 = exit if $BRANCH is missing and not main)
 switch_repo() {
@@ -53,6 +60,10 @@ docker compose \
   --env-file "${HOME_SERVER_DIR}/.env" \
   "${PROFILE_ARGS[@]}" \
   up -d --remove-orphans
+
+{% if docker_stack_storage_containers | length > 0 %}
+docker update --restart={{ docker_stack_storage_restart_policy }} {{ docker_stack_storage_containers | join(' ') }}
+{% endif %}
 
 {% if vpn_enabled | bool %}
 # OpenVPN and the VPN-routed Home Assistant profile are optional. Start them separately

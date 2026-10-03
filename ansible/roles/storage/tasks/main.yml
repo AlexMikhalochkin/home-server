@@ -14,6 +14,27 @@
   loop_control:
     label: "{{ item.name | default('unnamed') }}"
 
+- name: Validate optional MergerFS pool configuration
+  ansible.builtin.assert:
+    that:
+      - storage_pool.mount_point | default('') | length > 0
+      - storage_pool.branches | default([]) | length >= 1
+    fail_msg: A storage pool must define a mount point and at least one branch.
+  when: storage_pool | length > 0
+
+- name: Require MergerFS branches to use configured disk mount points
+  ansible.builtin.assert:
+    that:
+      - item in (storage_disks | map(attribute='mount_point') | list)
+      - item != storage_pool.mount_point
+      - not item.startswith(storage_pool.mount_point ~ '/')
+      - not storage_pool.mount_point.startswith(item ~ '/')
+    fail_msg: >-
+      MergerFS branch '{{ item }}' must be a configured disk mount point and must not
+      overlap the pool mount point.
+  loop: "{{ storage_pool.branches | default([]) }}"
+  when: storage_pool | length > 0
+
 - name: Check whether each configured device is already present
   ansible.builtin.stat:
     path: "{{ item.source }}"
@@ -33,11 +54,25 @@
   loop_control:
     label: "{{ item.item.name }}"
 
+- name: Remove legacy fstab entries for disks moved into a pool
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: >-
+      ^{{ item.source | regex_escape }}\s+{{ item.legacy_mount_point | regex_escape }}\s+
+    state: absent
+  loop: "{{ storage_disks }}"
+  when:
+    - item.legacy_mount_point is defined
+    - item.legacy_mount_point != item.mount_point
+  loop_control:
+    label: "{{ item.name }}"
+
 - name: Detect existing filesystem on each configured device
   ansible.builtin.command: "blkid -o value -s TYPE {{ item.source }}"
   register: media_disk_blkid
   changed_when: false
   failed_when: false
+  check_mode: false
   loop: "{{ storage_disks }}"
   loop_control:
     label: "{{ item.name }}"
@@ -53,6 +88,12 @@
   loop_control:
     label: "{{ item.item.name }}"
 
+- name: Install MergerFS for a configured storage pool
+  ansible.builtin.apt:
+    name: mergerfs
+    state: present
+  when: storage_pool | length > 0
+
 - name: Ensure configured mount point directories exist
   ansible.builtin.file:
     path: "{{ item.mount_point }}"
@@ -62,13 +103,37 @@
   loop_control:
     label: "{{ item.name }}"
 
+- name: Ensure the storage pool mount point exists
+  ansible.builtin.file:
+    path: "{{ storage_pool.mount_point }}"
+    state: directory
+    mode: "0755"
+  when: storage_pool | length > 0
+
 - name: Mount configured disks and persist them in fstab
   ansible.posix.mount:
     path: "{{ item.mount_point }}"
     src: "{{ item.source }}"
     fstype: "{{ item.fstype | default('ext4') }}"
     opts: "{{ item.mount_opts | default('defaults') }}"
-    state: mounted
+    backup: true
+    state: "{{ storage_mount_state }}"
   loop: "{{ storage_disks }}"
   loop_control:
     label: "{{ item.name }}"
+
+- name: Mount and persist the configured MergerFS pool
+  ansible.posix.mount:
+    path: "{{ storage_pool.mount_point }}"
+    src: "{{ storage_pool.branches | join(':') }}"
+    fstype: fuse.mergerfs
+    opts: >-
+      {{ storage_pool.mount_opts | default(['allow_other', 'use_ino', 'category.create=mfs']) | join(',') }}
+    backup: true
+    state: "{{ storage_mount_state }}"
+  when: storage_pool | length > 0
+
+- name: Reload systemd mount units after storage configuration
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: storage_pool | length > 0

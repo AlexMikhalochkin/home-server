@@ -30,6 +30,10 @@ private_home_server_enabled: true
 docker_stack_start_script_path: "{{ home_server_configuration_dir }}/start.sh"
 docker_compose_pull: true
 docker_compose_up: true
+docker_stack_storage_mount_path: ""
+docker_stack_storage_containers: []
+docker_stack_storage_restart_policy: on-failure
+docker_stack_storage_service_name: docker-media-containers.service
 frigate_config_template: ""
 frigate_config_file: ""
 newton_frigate_enabled: false

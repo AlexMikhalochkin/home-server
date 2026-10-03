@@ -37,19 +37,41 @@ samba_shares:
 samba_user: alex
 samba_create_user: false
 
-# The existing 1 TB media disk is mounted separately from /media, which contains
-# host-managed data from the previous installation.
+# The existing 1 TB disk is a MergerFS branch; /mnt/media remains the services' pool path.
 storage_disks:
   - name: media
     source: /dev/disk/by-uuid/b64016e5-92cb-40a8-93c9-a2bc59893cf1
-    mount_point: /mnt/media
+    mount_point: /mnt/disks/media1
+    legacy_mount_point: /mnt/media
     fstype: ext4
+    mount_opts: defaults,nofail,x-systemd.device-timeout=10s
     format: false
   - name: media2
     source: /dev/disk/by-uuid/58fec2b6-dcec-4b72-96e7-f5e16476567c
     mount_point: /mnt/media2
     fstype: ext4
+    mount_opts: defaults,nofail,x-systemd.device-timeout=10s
     format: false
+
+storage_pool:
+  mount_point: /mnt/media
+  branches:
+    - /mnt/disks/media1
+    - /mnt/media2
+  mount_opts:
+    - allow_other
+    - use_ino
+    - category.create=mfs
+    - nofail
+    - x-systemd.requires=mnt-disks-media1.mount
+    - x-systemd.requires=mnt-media2.mount
+
+# Keep media containers stopped unless the pool mount succeeds during Docker startup.
+docker_stack_storage_mount_path: /mnt/media
+docker_stack_storage_containers:
+  - qbittorrent
+  - plex
+  - jellyfin
 
 service_paths:
   content: /mnt/media/content

@@ -3,6 +3,9 @@
 # disks or continue using the system disk when this list is empty.
 storage_disks: []
 
+storage_pool: {}
+storage_mount_state: mounted
+
 # Example:
 # storage_disks:
 #   - name: media
@@ -11,3 +14,13 @@ storage_disks: []
 #     fstype: ext4
 #     mount_opts: defaults
 #     format: false
+#
+# storage_pool:
+#   mount_point: /mnt/media
+#   branches:
+#     - /mnt/disks/media1
+#     - /mnt/media2
+#   mount_opts:
+#     - allow_other
+#     - use_ino
+#     - category.create=mfs

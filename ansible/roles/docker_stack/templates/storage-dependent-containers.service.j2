@@ -1,0 +1,14 @@
+[Unit]
+Description=Start storage-dependent Docker containers only when media storage is mounted
+After=docker.service
+PartOf=docker.service
+RequiresMountsFor={{ docker_stack_storage_mount_path }}
+ConditionPathIsMountPoint={{ docker_stack_storage_mount_path }}
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker start {{ docker_stack_storage_containers | join(' ') }}
+
+[Install]
+WantedBy=docker.service

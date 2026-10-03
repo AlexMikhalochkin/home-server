@@ -84,6 +84,32 @@
   when: home_server_configuration_enabled | bool or private_home_server_enabled | bool
   tags: [prepare]
 
+- name: Check that media storage is mounted before deploying storage-dependent containers
+  ansible.builtin.command:
+    cmd: "mountpoint -q {{ docker_stack_storage_mount_path }}"
+  register: docker_stack_storage_mount_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  become: false
+  when:
+    - docker_stack_storage_containers | length > 0
+    - docker_compose_up | bool
+  tags: [deploy, storage-media-policy]
+
+- name: Require media storage before deploying storage-dependent containers
+  ansible.builtin.assert:
+    that:
+      - docker_stack_storage_mount_check.rc == 0
+    fail_msg: >-
+      {{ docker_stack_storage_mount_path }} is not mounted. The Docker deployment was
+      stopped to prevent media containers from writing into an unmounted directory.
+  become: false
+  when:
+    - docker_stack_storage_containers | length > 0
+    - docker_compose_up | bool
+  tags: [deploy, storage-media-policy]
+
 - name: Clone or update home-server repository (public, HTTPS)
   ansible.builtin.git:
     repo: "{{ home_server_repo }}"
@@ -177,7 +203,25 @@
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0750"
-  tags: [prepare]
+  tags: [prepare, storage-boot]
+
+- name: Install storage-dependent container startup unit
+  ansible.builtin.template:
+    src: storage-dependent-containers.service.j2
+    dest: "/etc/systemd/system/{{ docker_stack_storage_service_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: docker_stack_storage_containers | length > 0
+  tags: [prepare, storage-boot]
+
+- name: Enable storage-dependent container startup after Docker
+  ansible.builtin.systemd_service:
+    name: "{{ docker_stack_storage_service_name }}"
+    daemon_reload: true
+    enabled: true
+  when: docker_stack_storage_containers | length > 0
+  tags: [prepare, storage-boot]
 
 - name: Require encrypted Newton Frigate secrets
   ansible.builtin.assert:
@@ -262,6 +306,37 @@
   changed_when: docker_compose_up_result.rc == 0
   when: docker_compose_up
   tags: [deploy]
+
+- name: Inspect storage-dependent container restart policies
+  ansible.builtin.command:
+    cmd: >-
+      docker inspect
+      --format={{ '{{.HostConfig.RestartPolicy.Name}}' }}
+      {{ item }}
+  become: true
+  become_user: "{{ deploy_user }}"
+  register: docker_stack_storage_restart_policies
+  changed_when: false
+  check_mode: false
+  loop: "{{ docker_stack_storage_containers }}"
+  when:
+    - docker_compose_up | bool
+    - docker_stack_storage_containers | length > 0
+  tags: [deploy, storage-media-policy]
+
+- name: Disable Docker daemon auto-start for storage-dependent containers
+  ansible.builtin.command:
+    cmd: >-
+      docker update --restart={{ docker_stack_storage_restart_policy }}
+      {{ item.item }}
+  become: true
+  become_user: "{{ deploy_user }}"
+  loop: "{{ docker_stack_storage_restart_policies.results | default([]) }}"
+  when:
+    - docker_compose_up | bool
+    - docker_stack_storage_containers | length > 0
+    - item.stdout != docker_stack_storage_restart_policy
+  tags: [deploy, storage-media-policy]
 
 # OpenVPN is optional and independent of the normal stack. Services that need it must
 # explicitly opt into a routed design rather than sharing its network namespace.

@@ -33,7 +33,7 @@ laptop again.
 | `common` | github | `apt update/upgrade`, base packages (incl. `acl`, needed for `become_user` tasks), timezone |
 | `deploy_user` | github | Create the dedicated `github` deploy user/group (uid/gid picked by the OS — see note below), install its GitHub Actions authorized key |
 | `docker` | github | Docker Engine + Compose plugin, adds the deploy user to the `docker` group |
-| `storage` | github | **Opt-in** (`storage_disks`). Mount any number of existing disks by UUID/by-id; never reformats a disk that already has a filesystem |
+| `storage` | github | **Opt-in** (`storage_disks`). Mount existing disks by UUID/by-id; optionally combine them with MergerFS without formatting them |
 | `samba` | github | Share the configured downloads, TV series, and movies directories (optional) |
 | `docker_stack` | github | Select the inventory's Compose files; clone only enabled repositories; render `.env`; install `start.sh`; `docker compose up` |
 
@@ -293,6 +293,60 @@ for completed and incomplete data, while Plex and Jellyfin read the `content`
 directory. The three directories are exposed as separate Samba shares. It never
 formats an existing filesystem unless `format: true` is explicitly set and the device
 has no filesystem.
+
+Chris combines its independently mounted media disks with an optional MergerFS pool.
+When moving a disk to a new branch mount point, set `legacy_mount_point` to remove its
+old fstab entry without unmounting a live filesystem:
+
+```yaml
+storage_disks:
+  - name: media
+    source: /dev/disk/by-uuid/<uuid>
+    mount_point: /mnt/disks/media1
+    legacy_mount_point: /mnt/media
+    fstype: ext4
+    mount_opts: defaults,nofail,x-systemd.device-timeout=10s
+    format: false
+  - name: media2
+    source: /dev/disk/by-uuid/<uuid>
+    mount_point: /mnt/media2
+    fstype: ext4
+    mount_opts: defaults,nofail,x-systemd.device-timeout=10s
+    format: false
+
+storage_pool:
+  mount_point: /mnt/media
+  branches:
+    - /mnt/disks/media1
+    - /mnt/media2
+  mount_opts:
+    - allow_other
+    - use_ino
+    - category.create=mfs
+    - nofail
+    - x-systemd.requires=mnt-disks-media1.mount
+    - x-systemd.requires=mnt-media2.mount
+```
+
+Each branch remains a separate filesystem; MergerFS presents their directories under
+one path and places new files on the branch with the most free space. Existing files
+stay where they are. This is not RAID and provides no redundancy. The systemd
+dependencies require all branches to be mounted before the pool starts, preventing
+writes into an unmounted branch directory. Chris's disk and pool mounts use `nofail`,
+so a missing disk does not hold the machine in emergency mode: normal networking and
+SSH can come up, while the pool itself remains unmounted. The media containers
+(qBittorrent, Plex, and Jellyfin) are started by a systemd unit that requires the pool;
+other Docker services can start normally. Their restart policy is `on-failure`, so
+they restart after a non-zero exit but Docker will not auto-start them before the pool
+is available. After restoring or reconfiguring storage while the server is running, start
+`docker-media-containers.service` once the pool is mounted.
+
+If only one branch is available, the current pool deliberately remains unavailable.
+To use the surviving disk, remove the missing disk from `storage_disks`,
+`storage_pool.branches`, and the pool's `x-systemd.requires` options, then apply the
+storage configuration. To replace a disk, format the new disk as ext4, copy and verify
+the old branch data, update the UUID while preserving the branch mount point, then run
+the full `site.yml` configuration.
 
 The private `private-home-server` Compose overlay must use the generated
 `QBITTORRENT_ROOT_PATH` variable instead of hardcoded `/media/disk/...` paths.
