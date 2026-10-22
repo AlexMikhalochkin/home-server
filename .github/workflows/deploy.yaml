@@ -19,7 +19,6 @@ on:
         type: choice
         options:
           - chris
-          - jack
           - newton
         default: chris
       branch:
@@ -32,6 +31,10 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: home-server-${{ inputs.environment }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -40,6 +43,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || 'main' }}
 
       - name: Tailscale
         uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8 # v4
@@ -66,15 +71,19 @@ jobs:
         working-directory: ansible/github
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
+          DEPLOY_BRANCH: ${{ inputs.branch || 'main' }}
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
+          TARGET_HOST: ${{ vars.TAILSCALE_TARGET_HOST }}
+          SSH_USER: ${{ vars.SSH_USER }}
         run: |
           inventory="inventory/hosts.yml"
-          if [ "${{ inputs.environment }}" = "newton" ]; then
+          if [ "$TARGET_ENVIRONMENT" = "newton" ]; then
             inventory="inventory/hosts-newton.yml"
           fi
           ansible-playbook playbooks/site.yml \
             -i "$inventory" \
             --tags deploy \
-            -e ansible_host="${{ vars.TAILSCALE_TARGET_HOST }}" \
-            -e ansible_user="${{ vars.SSH_USER }}" \
+            -e ansible_host="$TARGET_HOST" \
+            -e ansible_user="$SSH_USER" \
             -e ansible_ssh_private_key_file="${RUNNER_TEMP}/ssh_key" \
-            -e deploy_branch="${{ inputs.branch || 'main' }}"
+            -e deploy_branch="$DEPLOY_BRANCH"

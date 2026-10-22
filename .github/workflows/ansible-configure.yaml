@@ -12,7 +12,6 @@ on:
         type: choice
         options:
           - chris
-          - jack
           - newton
         default: chris
       branch:
@@ -25,6 +24,10 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: home-server-${{ inputs.environment }}
+  cancel-in-progress: false
+
 jobs:
   configure:
     runs-on: ubuntu-latest
@@ -33,22 +36,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || 'main' }}
 
       - name: Validate required environment configuration
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           ANSIBLE_BECOME_PASSWORD: ${{ secrets.ANSIBLE_BECOME_PASSWORD }}
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+          TARGET_HOST: ${{ vars.TAILSCALE_TARGET_HOST }}
+          SSH_USER: ${{ vars.ADMIN_SSH_USER }}
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
         run: |
           missing=()
-          [ -z "${{ vars.TAILSCALE_TARGET_HOST }}" ] && missing+=("vars.TAILSCALE_TARGET_HOST")
-          [ -z "${{ vars.ADMIN_SSH_USER }}" ] && missing+=("vars.ADMIN_SSH_USER")
+          [ -z "$TARGET_HOST" ] && missing+=("vars.TAILSCALE_TARGET_HOST")
+          [ -z "$SSH_USER" ] && missing+=("vars.ADMIN_SSH_USER")
           [ -z "$SSH_PRIVATE_KEY" ] && missing+=("secrets.SSH_PRIVATE_KEY")
           [ -z "$ANSIBLE_BECOME_PASSWORD" ] && missing+=("secrets.ANSIBLE_BECOME_PASSWORD")
           [ -z "$ANSIBLE_VAULT_PASSWORD" ] && missing+=("secrets.ANSIBLE_VAULT_PASSWORD")
           if [ "${#missing[@]}" -gt 0 ]; then
-            echo "::error::Missing required environment configuration for '${{ inputs.environment }}': ${missing[*]}"
-            echo "Set 'vars.*' entries under the Variables tab (not Secrets) and 'secrets.*' entries under the Secrets tab, both in Settings > Environments > ${{ inputs.environment }}."
+            echo "::error::Missing required environment configuration for '$TARGET_ENVIRONMENT': ${missing[*]}"
+            echo "Set 'vars.*' entries under the Variables tab (not Secrets) and 'secrets.*' entries under the Secrets tab, both in Settings > Environments > $TARGET_ENVIRONMENT."
             exit 1
           fi
 
@@ -85,16 +93,20 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
           ANSIBLE_BECOME_PASSWORD: ${{ secrets.ANSIBLE_BECOME_PASSWORD }}
+          DEPLOY_BRANCH: ${{ inputs.branch || 'main' }}
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
+          TARGET_HOST: ${{ vars.TAILSCALE_TARGET_HOST }}
+          SSH_USER: ${{ vars.ADMIN_SSH_USER }}
         run: |
           inventory="inventory/hosts.yml"
-          if [ "${{ inputs.environment }}" = "newton" ]; then
+          if [ "$TARGET_ENVIRONMENT" = "newton" ]; then
             inventory="inventory/hosts-newton.yml"
           fi
           ansible-playbook playbooks/site.yml \
             -i "$inventory" \
-            -e ansible_host="${{ vars.TAILSCALE_TARGET_HOST }}" \
-            -e ansible_user="${{ vars.ADMIN_SSH_USER }}" \
+            -e ansible_host="$TARGET_HOST" \
+            -e ansible_user="$SSH_USER" \
             -e ansible_ssh_private_key_file="${RUNNER_TEMP}/ssh_key" \
             -e ansible_become_password="$ANSIBLE_BECOME_PASSWORD" \
-            -e deploy_branch="${{ inputs.branch || 'main' }}" \
+            -e deploy_branch="$DEPLOY_BRANCH" \
             --vault-password-file "${RUNNER_TEMP}/vault_pass"

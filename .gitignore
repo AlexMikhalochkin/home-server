@@ -12,3 +12,6 @@ ansible/**/local.yml
 # Ansible Vault password file (local convenience)
 ansible/.vault-pass
 .vault-pass
+
+# Python infrastructure tests
+__pycache__/

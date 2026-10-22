@@ -4,7 +4,8 @@
 # Kept here for cases where you need to redeploy by SSHing in directly, without CI.
 set -euo pipefail
 
-BRANCH="${1:-{{ deploy_branch }}}"
+DEFAULT_BRANCH={{ deploy_branch | quote }}
+BRANCH="${1:-$DEFAULT_BRANCH}"
 BASE="{{ deploy_base_dir }}"
 COMPOSE_FILE_ARGS=({% for compose_file in docker_compose_files %}-f "{{ compose_file }}" {% endfor %})
 PROFILE_ARGS=({% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %})
@@ -31,10 +32,15 @@ switch_repo() {
     git restore .
     git fetch origin
 
-    if git ls-remote --heads origin "${BRANCH}" | grep -q "${BRANCH}"; then
+    if git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null; then
         git checkout -B "${BRANCH}" "origin/${BRANCH}"
         echo "${repo_path}: switched to ${BRANCH}"
     else
+        lookup_status=$?
+        if [ "${lookup_status}" -ne 2 ]; then
+            echo "ERROR: branch lookup failed in ${repo_path} (rc=${lookup_status})" >&2
+            exit "${lookup_status}"
+        fi
         if [ "${required}" = "1" ] && [ "${BRANCH}" != "main" ]; then
             echo "ERROR: branch '${BRANCH}' not found in ${repo_path} (required)"
             exit 1
@@ -59,7 +65,7 @@ docker compose \
   "${COMPOSE_FILE_ARGS[@]}" \
   --env-file "${HOME_SERVER_DIR}/.env" \
   "${PROFILE_ARGS[@]}" \
-  up -d --remove-orphans
+  up -d --wait --wait-timeout 360 --remove-orphans
 
 {% if docker_stack_storage_containers | length > 0 %}
 docker update --restart={{ docker_stack_storage_restart_policy }} {{ docker_stack_storage_containers | join(' ') }}
@@ -72,7 +78,7 @@ if ! docker compose \
   "${COMPOSE_FILE_ARGS[@]}" \
   --env-file "${HOME_SERVER_DIR}/.env" \
   "${VPN_PROFILE_ARGS[@]}" \
-  up -d --remove-orphans; then
+  up -d --wait --wait-timeout 360 --remove-orphans; then
     echo "WARNING: openvpn failed to start. This is usually an" \
          "external VPN provider/account issue, not a stack problem — check your VPN" \
          "account status/credentials, then re-run this script."

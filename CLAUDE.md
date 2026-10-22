@@ -9,15 +9,22 @@ Infrastructure-as-code for a personal home server running a Docker-based smart h
 ## Local Verification Commands
 
 ```bash
-# Lint docker-compose.yaml (0 warnings allowed, same check as CI)
-docker run -t --rm -v ${PWD}:/app zavoloklom/dclint /app/docker-compose.yaml
+# Infrastructure regression checks (Ansible, its collections, and Compose required)
+python3 -m unittest discover -s tests -v
 
-# KICS security scan on docker-compose.yaml
-docker run -t --rm -v "./docker-compose.yaml":/path/docker-compose.yaml \
-  checkmarx/kics scan -p /path -o "/path/"
+# Lint both Compose files (0 warnings allowed, same check as CI)
+docker run -t --rm --network none -v "${PWD}:/app:ro" \
+  zavoloklom/dclint /app/docker-compose.yaml /app/docker-compose.newton.yaml
+
+# KICS security scan on both Compose files
+docker run -t --rm --network none \
+  -v "${PWD}/docker-compose.yaml:/path/docker-compose.yaml:ro" \
+  -v "${PWD}/docker-compose.newton.yaml:/path/docker-compose.newton.yaml:ro" \
+  checkmarx/kics scan -p /path -o /tmp/results
 ```
 
-There are no unit tests. Validation is entirely through the linters above and manual deploy.
+Infrastructure regression tests live in `tests/`. CI runs them and checks Ansible syntax
+for both hosts; runtime validation still requires a manual deploy.
 
 ## Architecture
 

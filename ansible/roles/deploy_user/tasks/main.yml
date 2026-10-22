@@ -49,11 +49,3 @@
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0600"
-
-- name: Fix ownership of anything already deployed as another user
-  ansible.builtin.file:
-    path: "{{ deploy_user_home }}"
-    state: directory
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    recurse: true

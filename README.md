@@ -18,6 +18,9 @@ inventory selects `docker-compose.newton.yaml`, which contains only Frigate
 `/opt/github-deploy/newton/frigate/config` and
 `/opt/github-deploy/newton/frigate/storage` on the Newton host. It does not
 clone or compose `private-home-server`, and it never selects Chris services.
+Frigate's authenticated UI/API is available on port `8971`. Its unauthenticated
+internal HTTP port `5000` is not published on the host; RTSP port `8554` and
+WebRTC port `8555` remain available.
 
 Select **newton** in either the **Ansible Configure** or **Deploy** workflow.
 Before the first Newton deployment, create the encrypted
@@ -27,6 +30,10 @@ renders the private
 `/opt/github-deploy/newton/frigate/config/config.yaml` from Vault with
 restrictive permissions; the plaintext configuration is never committed.
 Ansible creates the config and storage directories.
+
+The current camera policy disables object and motion detection and defines only
+alert retention. It does not retain video in that mode. Continuous recording or
+motion-based retention must be configured separately before relying on saved footage.
 
 When moving from the live prototype to Ansible management, stop and remove the
 manually created `frigate` container first. Preserve any Frigate state or
@@ -129,14 +136,30 @@ router forwarding and firewall settings are not modified by this configuration.
 
 ## Local Verification
 
-Verify `docker-compose.yaml` locally using:
+### Infrastructure regression checks
+
+With Ansible installed in the active Python environment:
+
+```bash
+ansible-galaxy collection install -r ansible/requirements.yml
+python3 -m unittest discover -s tests -v
+```
+
+These checks require Docker Compose but do not start containers or connect to the servers.
+They cover host selection, literal shell inputs, branch lookup failures, storage guards,
+Compose rendering, and the unchanged camera policy. CI also checks both Ansible playbooks
+for both inventories.
 
 ### Docker Compose Linter (dclint)
 ```bash
-docker run -t --rm -v ${PWD}:/app zavoloklom/dclint /app/docker-compose.yaml
+docker run -t --rm --network none -v "${PWD}:/app:ro" \
+  zavoloklom/dclint /app/docker-compose.yaml /app/docker-compose.newton.yaml
 ```
 
 ### KICS Security Scanner
 ```bash
-docker run -t --rm -v "./docker-compose.yaml":/path/docker-compose.yaml checkmarx/kics scan -p /path -o "/path/"
+docker run -t --rm --network none \
+  -v "${PWD}/docker-compose.yaml:/path/docker-compose.yaml:ro" \
+  -v "${PWD}/docker-compose.newton.yaml:/path/docker-compose.newton.yaml:ro" \
+  checkmarx/kics scan -p /path -o /tmp/results
 ```

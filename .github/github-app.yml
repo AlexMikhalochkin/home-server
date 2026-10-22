@@ -1,8 +1,8 @@
 scripts:
   - name: Lint
-    command: "docker run -t --rm -v ${PWD}:/app zavoloklom/dclint /app/docker-compose.yaml"
+    command: 'docker run -t --rm --network none -v "${PWD}:/app:ro" zavoloklom/dclint /app/docker-compose.yaml /app/docker-compose.newton.yaml'
   - name: KICS
-    command: "docker run -t --rm -v \"./docker-compose.yaml\":/path/docker-compose.yaml checkmarx/kics scan -p /path -o \"/path/\""
+    command: 'docker run -t --rm --network none -v "${PWD}/docker-compose.yaml:/path/docker-compose.yaml:ro" -v "${PWD}/docker-compose.newton.yaml:/path/docker-compose.newton.yaml:ro" checkmarx/kics scan -p /path -o /tmp/results'
 automation:
   auto_issue_session: true
   remote_control: false

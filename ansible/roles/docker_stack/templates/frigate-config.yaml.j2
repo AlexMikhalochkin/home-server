@@ -7,6 +7,24 @@ mqtt:
 ffmpeg:
   hwaccel_args: preset-vaapi
 
+detect:
+  enabled: false
+  width: 704
+  height: 576
+  fps: 1
+motion:
+  enabled: false
+record:
+  enabled: true
+  alerts:
+    retain:
+      days: 14
+      mode: motion
+snapshots:
+  enabled: true
+  retain:
+    default: 14
+
 go2rtc:
   streams:
     camera1:
@@ -27,23 +45,6 @@ cameras:
           input_args: preset-rtsp-restream
           roles:
             - record
-    detect:
-      enabled: false
-      width: 704
-      height: 576
-      fps: 1
-    motion:
-      enabled: false
-    record:
-      enabled: true
-      alerts:
-        retain:
-          days: 14
-          mode: motion
-    snapshots:
-      enabled: true
-      retain:
-        default: 14
 
   camera2:
     enabled: true
@@ -57,22 +58,5 @@ cameras:
           input_args: preset-rtsp-restream
           roles:
             - record
-    detect:
-      enabled: false
-      width: 704
-      height: 576
-      fps: 1
-    motion:
-      enabled: false
-    record:
-      enabled: true
-      alerts:
-        retain:
-          days: 14
-          mode: motion
-    snapshots:
-      enabled: true
-      retain:
-        default: 14
 
 version: 0.18-0

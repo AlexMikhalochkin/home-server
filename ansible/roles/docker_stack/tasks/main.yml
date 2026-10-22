@@ -39,6 +39,19 @@
     mode: "0700"
   tags: [prepare]
 
+- name: Prepare enabled repository directories for the deploy user
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    recurse: true
+  loop: >-
+    {{ [home_server_dir]
+       + ([home_server_configuration_dir] if home_server_configuration_enabled | bool else [])
+       + ([private_home_server_dir] if private_home_server_enabled | bool else []) }}
+  tags: [prepare]
+
 - name: Install GitHub deploy SSH keys
   ansible.builtin.copy:
     content: "{{ item.key }}\n"
@@ -129,12 +142,19 @@
 # deploy_branch there if it exists, otherwise fall back to main. home-server itself has no
 # fallback — deploy_branch must exist there (enforced above by the plain git module).
 - name: Check whether deploy_branch exists on home-server-configuration
-  ansible.builtin.command: "git ls-remote --exit-code --heads {{ home_server_configuration_repo_ssh }} {{ deploy_branch }}"
+  ansible.builtin.command:
+    argv:
+      - git
+      - ls-remote
+      - --exit-code
+      - --heads
+      - "{{ home_server_configuration_repo_ssh }}"
+      - "{{ deploy_branch }}"
   become: true
   become_user: "{{ deploy_user }}"
   register: home_server_configuration_branch_check
   changed_when: false
-  failed_when: false
+  failed_when: home_server_configuration_branch_check.rc not in [0, 2]
   when: home_server_configuration_enabled | bool
   tags: [deploy]
 
@@ -152,12 +172,19 @@
   tags: [deploy]
 
 - name: Check whether deploy_branch exists on private-home-server
-  ansible.builtin.command: "git ls-remote --exit-code --heads {{ private_home_server_repo_ssh }} {{ deploy_branch }}"
+  ansible.builtin.command:
+    argv:
+      - git
+      - ls-remote
+      - --exit-code
+      - --heads
+      - "{{ private_home_server_repo_ssh }}"
+      - "{{ deploy_branch }}"
   become: true
   become_user: "{{ deploy_user }}"
   register: private_home_server_branch_check
   changed_when: false
-  failed_when: false
+  failed_when: private_home_server_branch_check.rc not in [0, 2]
   when: private_home_server_enabled | bool
   tags: [deploy]
 
@@ -298,7 +325,7 @@
       {% for compose_file in docker_compose_files %}-f {{ compose_file }} {% endfor %}
       --env-file {{ home_server_dir }}/.env
       {% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %}
-      up -d --remove-orphans
+      up -d --wait --wait-timeout 360 --remove-orphans
     chdir: "{{ home_server_dir }}"
   become: true
   become_user: "{{ deploy_user }}"
@@ -347,7 +374,7 @@
       {% for compose_file in docker_compose_files %}-f {{ compose_file }} {% endfor %}
       --env-file {{ home_server_dir }}/.env
       --profile {{ vpn_profile }}
-      up -d --remove-orphans
+      up -d --wait --wait-timeout 360 --remove-orphans
     chdir: "{{ home_server_dir }}"
   become: true
   become_user: "{{ deploy_user }}"

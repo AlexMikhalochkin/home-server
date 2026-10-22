@@ -39,11 +39,13 @@
   notify: Restart samba
 
 - name: Set Samba user password
-  ansible.builtin.shell: |
-    set -o pipefail
-    printf '%s\n%s\n' "{{ samba_password }}" "{{ samba_password }}" | smbpasswd -a -s "{{ samba_user }}"
-  args:
-    executable: /bin/bash
+  ansible.builtin.command:
+    argv:
+      - smbpasswd
+      - -a
+      - -s
+      - "{{ samba_user }}"
+    stdin: "{{ samba_password }}\n{{ samba_password }}"
   no_log: true
   when:
     - samba_password is defined

@@ -15,7 +15,6 @@ services:
       TZ: ${TIMEZONE}
     ports:
       - '${HOST_IP}:8971:8971'
-      - '${HOST_IP}:5000:5000'
       - '${HOST_IP}:8554:8554'
       - '${HOST_IP}:8555:8555/tcp'
       - '${HOST_IP}:8555:8555/udp'

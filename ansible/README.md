@@ -55,9 +55,10 @@ so it works regardless of what the base image already allocated.
 Newton is selected with the `newton` choice in either GitHub Actions workflow.
 Unlike Chris, its inventory uses `hosts-newton.yml` and the Docker stack role
 uses only `docker-compose.newton.yaml`; the private service overlay and Chris
-storage are not cloned, mounted, or started. The first version exposes Frigate
-on ports `8971`, `5000`, `8554`, and `8555` (TCP/UDP), and passes through
+storage are not cloned, mounted, or started. Frigate exposes its authenticated
+UI/API on `8971`, RTSP on `8554`, and WebRTC on `8555` (TCP/UDP), and passes through
 `/dev/dri/renderD128` and `/dev/dri/card0`.
+The unauthenticated internal HTTP port `5000` is not published.
 
 Create a dedicated GitHub Actions keypair for Newton:
 
@@ -194,7 +195,7 @@ Tailscale, and you can rerun it later once you've generated the keypair.
 ## Step 2 — Full configure (GitHub Actions, or manually over Tailscale)
 
 Run the **"Ansible Configure"** workflow (`workflow_dispatch`) from GitHub Actions — this is
-the "one button" entry point after a reinstall. It needs, on the `chris` (or `jack`/`newton`)
+the "one button" entry point after a reinstall. It needs, on the `chris` or `newton`
 GitHub environment:
 
 | Name | Kind | Value |
@@ -237,7 +238,11 @@ the Chris inventory for backwards compatibility.
 8. Installs the inventory-selected `start.sh` (manual break-glass fallback only — see below)
 9. Runs the inventory-selected Compose files and profiles (`docker-compose.yaml` plus the
    private overlay for Chris; only `docker-compose.newton.yaml` and `newton` for Newton)
-   with `pull` and `up -d`
+   with `pull` and `up -d --wait --wait-timeout 360`
+
+Only enabled repository directories are recursively assigned to the deploy user.
+Application data keeps its service-specific ownership, even if a later configuration
+task fails.
 
 ### Full configure vs. fast deploy — same tasks, different tags
 
@@ -254,6 +259,17 @@ split into two tags.
 `deploy`-tagged tasks touch them (they only read files already installed by a prior
 `prepare` pass). This keeps day-to-day redeploys fast and dependency-light while guaranteeing
 it's the exact same logic as the full configure, not a second hand-maintained copy.
+
+Both workflows check out the requested deployment branch before loading its playbook
+and inventory. Runs for the same environment share a concurrency group, so Configure
+and Deploy cannot modify that host simultaneously. A private repository falls back to
+`main` only when Git confirms the branch is missing; connection and authentication
+errors stop deployment.
+
+Compose waits up to 360 seconds for the selected services to be running, and healthy
+where a health check exists. This includes Frigate's built-in API health check and
+its five-minute startup grace period.
+The VPN profile still runs in a separate best-effort pass.
 
 `start.sh` still exists (for SSHing in directly without CI), but is no longer the primary
 path — keep it in mind if you ever change the compose/profile logic, since it duplicates a
