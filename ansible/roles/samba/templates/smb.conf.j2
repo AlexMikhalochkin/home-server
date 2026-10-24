@@ -21,10 +21,18 @@
    guest ok = no
    valid users = {{ samba_user }}
    force user = {{ samba_user }}
+{% if media_access_enabled | default(false) %}
+   force group = {{ media_group }}
+   create mask = 0660
+   directory mask = 2770
+   force create mode = 0660
+   force directory mode = 2770
+{% else %}
    create mask = 0664
    directory mask = 0775
    force create mode = 0664
    force directory mode = 0775
+{% endif %}
    inherit permissions = yes
    nt acl support = yes
    vfs objects = acl_xattr fruit streams_xattr

@@ -4,6 +4,13 @@
 docker_compose_profile: chris
 deploy_user: github
 deploy_branch: main
+media_access_enabled: true
+media_group: media
+docker_stack_start_script_path: "{{ deploy_base_dir }}/start.sh"
+docker_compose_files:
+  - "{{ home_server_dir }}/docker-compose.yaml"
+  - "{{ private_home_server_dir }}/docker-compose.yaml"
+  - "{{ deploy_base_dir }}/media-compose.yaml"
 
 timezone: Europe/Berlin
 

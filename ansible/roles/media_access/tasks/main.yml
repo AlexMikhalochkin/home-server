@@ -1,0 +1,54 @@
+---
+- name: Install POSIX ACL tools
+  ansible.builtin.apt:
+    name: acl
+    state: present
+
+- name: Create the shared media group
+  ansible.builtin.group:
+    name: "{{ media_group }}"
+    system: true
+    state: present
+
+- name: Create the non-login media service account
+  ansible.builtin.user:
+    name: "{{ media_user }}"
+    group: "{{ media_group }}"
+    groups: ""
+    shell: /usr/sbin/nologin
+    home: /nonexistent
+    create_home: false
+    password_lock: true
+    system: true
+  register: media_access_account
+
+- name: Expose the resolved media identity
+  ansible.builtin.set_fact:
+    media_user_uid: "{{ media_access_account.uid }}"
+    media_user_gid: "{{ media_access_account.group }}"
+
+- name: Inspect GPU device group ownership
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /dev/dri/card0
+    - /dev/dri/renderD128
+  register: media_access_gpu_devices
+
+- name: Require the configured media GPU devices
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.ischr
+    fail_msg: "The configured media GPU device {{ item.item }} is missing."
+  loop: "{{ media_access_gpu_devices.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Expose numeric GPU supplementary groups
+  ansible.builtin.set_fact:
+    media_video_gid: "{{ media_access_gpu_devices.results[0].stat.gid }}"
+    media_render_gid: "{{ media_access_gpu_devices.results[1].stat.gid }}"
+
+- name: Prepare shared media permissions and application state
+  ansible.builtin.include_tasks: prepare.yml

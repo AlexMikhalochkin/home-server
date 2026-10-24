@@ -1,0 +1,73 @@
+---
+- name: Resolve tracked qBittorrent paths before changing their permissions
+  ansible.builtin.command:
+    argv: [realpath, --canonicalize-existing, --, "{{ item }}"]
+  loop: "{{ [media_access_repository_config_dir] + media_access_repository_files }}"
+  register: media_access_configuration_paths
+  changed_when: false
+
+- name: Reject symlinked tracked qBittorrent paths
+  ansible.builtin.assert:
+    that:
+      - item.stdout == item.item
+    fail_msg: "Refusing symlinked qBittorrent configuration: {{ item.item }}"
+  loop: "{{ media_access_configuration_paths.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Inspect tracked qBittorrent files
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    follow: false
+  loop: "{{ media_access_repository_files }}"
+  register: media_access_configuration_files
+
+- name: Require existing regular qBittorrent files for container bind mounts
+  ansible.builtin.assert:
+    that:
+      - item.stat.isreg | default(false)
+    fail_msg: "Expected a regular configuration file at {{ item.item }}"
+  loop: "{{ media_access_configuration_files.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Maintain the shared tracked qBittorrent directory
+  ansible.builtin.file:
+    path: "{{ media_access_repository_config_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ media_group }}"
+    mode: "2770"
+    follow: false
+
+- name: Maintain group access to the known tracked qBittorrent files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    group: "{{ media_group }}"
+    mode: "0660"
+    follow: false
+  loop: "{{ media_access_repository_files }}"
+
+- name: Preserve deploy-user access after container ownership changes
+  ansible.posix.acl:
+    path: "{{ item }}"
+    etype: user
+    entity: "{{ deploy_user }}"
+    permissions: rw
+    follow: false
+    state: present
+  loop: "{{ media_access_repository_files }}"
+
+- name: Inherit deploy-user and shared-group access on Git replacements
+  ansible.posix.acl:
+    path: "{{ media_access_repository_config_dir }}"
+    etype: "{{ item.etype }}"
+    entity: "{{ item.entity | default(omit) }}"
+    permissions: rwx
+    default: true
+    follow: false
+    state: present
+  loop:
+    - etype: user
+      entity: "{{ deploy_user }}"
+    - etype: group

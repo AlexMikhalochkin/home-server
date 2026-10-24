@@ -1,0 +1,37 @@
+# Managed by Ansible; apply after the public and private Compose files.
+services:
+  jellyfin:
+    restart: "no"
+    user: "${MEDIA_UID:?Run full Ansible Configure first}:${MEDIA_GID:?Run full Ansible Configure first}"
+    group_add:
+      - "${MEDIA_VIDEO_GID:?Run full Ansible Configure first}"
+      - "${MEDIA_RENDER_GID:?Run full Ansible Configure first}"
+    volumes:
+      - type: volume
+        source: jellyfin-config
+        target: /config
+        volume:
+          nocopy: true
+      - type: volume
+        source: jellyfin-cache
+        target: /cache
+        volume:
+          nocopy: true
+      - ${PLEX_MEDIA_PATH}:/media:rw
+      - ${MEDIA2_PATH}:/media2:rw
+
+  plex:
+    restart: "no"
+    environment:
+      PUID: "${MEDIA_UID:?Run full Ansible Configure first}"
+      PGID: "${MEDIA_GID:?Run full Ansible Configure first}"
+      UMASK: "0007"
+{% if private_home_server_enabled | bool %}
+
+  qbittorrent:
+    restart: "no"
+    environment:
+      PUID: "${MEDIA_UID:?Run full Ansible Configure first}"
+      PGID: "${MEDIA_GID:?Run full Ansible Configure first}"
+      UMASK: "0007"
+{% endif %}

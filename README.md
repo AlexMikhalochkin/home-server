@@ -31,6 +31,14 @@ renders the private
 restrictive permissions; the plaintext configuration is never committed.
 Ansible creates the config and storage directories.
 
+Chris uses a non-login `media` account/group for Plex, Jellyfin, and qBittorrent, with
+authenticated Samba access as `alex`. Existing media and application data must be
+prepared manually during maintenance before the first full **Ansible Configure**.
+Normal Ansible runs maintain accounts, directory-root ACLs and container identities;
+they do not back up or recursively migrate existing data. See
+[shared media configuration](ansible/README.md#shared-media-identity-on-chris).
+The generated media Compose override is part of every subsequent Chris deployment.
+
 The current camera policy disables object and motion detection and defines only
 alert retention. It does not retain video in that mode. Continuous recording or
 motion-based retention must be configured separately before relying on saved footage.
@@ -149,6 +157,10 @@ These checks require Docker Compose but do not start containers or connect to th
 They cover host selection, literal shell inputs, branch lookup failures, storage guards,
 Compose rendering, and the unchanged camera policy. CI also checks both Ansible playbooks
 for both inventories.
+
+The root-only Linux ACL test is skipped on macOS/non-root runs. CI additionally runs it
+inside an isolated Python container with the `acl` package, exercising real shared-group
+creation, cross-user modification/deletion, outsider denial, and permission restoration.
 
 ### Docker Compose Linter (dclint)
 ```bash

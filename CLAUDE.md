@@ -82,6 +82,12 @@ The `chris-vpn` profile is started in a separate best-effort `docker compose up`
 - **`DEPLOY_UID`/`DEPLOY_GID` are not hardcoded** — the OS assigns a free system uid/gid at deploy user creation; this is fed into `.env`. Necessary because Ubuntu changes system uid allocation between versions.
 - **Storage is declarative and multi-disk** (`storage` role) — each optional disk uses a stable UUID/by-id source and an explicit mount point; services consume named paths from the environment-specific host vars. Disks are never reformatted unless an entry explicitly sets `format: true` and no filesystem exists.
 - **Grafana anonymous admin access** — intentional, LAN-only.
+- **Shared media identity** — Chris provisions a non-login `media` account/group with
+  OS-assigned IDs. A last-applied, Ansible-rendered `media-compose.yaml` aligns Plex,
+  Jellyfin, and private qBittorrent; Samba remains authenticated as `alex`. Existing data
+  is prepared manually, with backups, outside this repository. Ansible maintains roots
+  and known configuration-file ACLs only; fast deploy must not create accounts or migrate
+  permissions. Private configuration updates must not discard application-written settings.
 - **`openvpn` network namespace sharing** — `home-assistant` and `jellyfin` use `network_mode: "service:openvpn"` so their traffic routes through the VPN.
 
 ### Secrets

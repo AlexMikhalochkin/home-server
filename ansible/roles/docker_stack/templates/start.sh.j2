@@ -29,7 +29,14 @@ switch_repo() {
     required="$2"
 
     cd "${repo_path}"
-    git restore .
+    if [ "${repo_path}" = "${HOME_SERVER_CONFIGURATION_DIR}" ]; then
+        if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "ERROR: private configuration has local changes; back up and reconcile settings before deploying." >&2
+            exit 1
+        fi
+    else
+        git restore .
+    fi
     git fetch origin
 
     if git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null; then

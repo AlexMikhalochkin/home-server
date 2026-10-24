@@ -1,0 +1,20 @@
+---
+media_user: media
+media_group: media
+media_access_volumes:
+  - home-server_jellyfin-config
+  - home-server_jellyfin-cache
+media_access_private_volumes:
+  - home-server_qbittorrent-data
+media_access_repository_config_dir: "{{ home_server_configuration_dir }}/qbittorrent"
+media_access_repository_files:
+  - "{{ media_access_repository_config_dir }}/categories.json"
+  - "{{ media_access_repository_config_dir }}/qBittorrent.conf"
+  - "{{ media_access_repository_config_dir }}/watched_folders.json"
+media_access_directories:
+  - "{{ service_paths.content }}"
+  - "{{ service_paths.tv_series }}"
+  - "{{ service_paths.movies }}"
+  - "{{ service_paths.downloads }}"
+  - "{{ service_paths.downloads }}/incomplete"
+  - "{{ service_paths.media2 }}"

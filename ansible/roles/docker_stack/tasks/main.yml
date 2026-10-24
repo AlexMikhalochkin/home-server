@@ -39,13 +39,22 @@
     mode: "0700"
   tags: [prepare]
 
+- name: Prepare the shared media identity and permissions
+  ansible.builtin.include_role:
+    name: media_access
+    public: true
+    apply:
+      tags: [prepare]
+  when: media_access_enabled | default(false) | bool
+  tags: [prepare]
+
 - name: Prepare enabled repository directories for the deploy user
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
-    recurse: true
+    recurse: "{{ not (media_access_enabled | default(false) | bool) }}"
   loop: >-
     {{ [home_server_dir]
        + ([home_server_configuration_dir] if home_server_configuration_enabled | bool else [])
@@ -123,6 +132,31 @@
     - docker_compose_up | bool
   tags: [deploy, storage-media-policy]
 
+- name: Check shared media preparation before fast deployment
+  ansible.builtin.stat:
+    path: "{{ deploy_base_dir }}/media-compose.yaml"
+  register: docker_stack_media_override
+  become: false
+  when:
+    - media_access_enabled | default(false) | bool
+    - "'deploy' in ansible_run_tags"
+    - "'prepare' not in ansible_run_tags"
+  tags: [deploy]
+
+- name: Require prepared shared media deployment
+  ansible.builtin.assert:
+    that:
+      - docker_stack_media_override.stat.isreg | default(false)
+    fail_msg: >-
+      Shared media configuration is missing. Complete manual preparation of existing
+      media data, then run full Ansible Configure before using fast Deploy.
+  become: false
+  when:
+    - media_access_enabled | default(false) | bool
+    - "'deploy' in ansible_run_tags"
+    - "'prepare' not in ansible_run_tags"
+  tags: [deploy]
+
 - name: Clone or update home-server repository (public, HTTPS)
   ansible.builtin.git:
     repo: "{{ home_server_repo }}"
@@ -165,7 +199,8 @@
     version: "{{ deploy_branch if home_server_configuration_branch_check.rc == 0 else 'main' }}"
     accept_hostkey: "{{ git_clone_accept_hostkey }}"
     update: true
-    force: true
+    # Application-written settings must be reconciled, not silently discarded.
+    force: false
   become: true
   become_user: "{{ deploy_user }}"
   when: home_server_configuration_enabled | bool
@@ -201,17 +236,41 @@
   when: private_home_server_enabled | bool
   tags: [deploy]
 
+- name: Maintain Git and media access to tracked qBittorrent configuration
+  ansible.builtin.include_role:
+    name: media_access
+    tasks_from: configuration
+    apply:
+      tags: [prepare]
+  when:
+    - media_access_enabled | default(false) | bool
+    - home_server_configuration_enabled | bool
+    - private_home_server_enabled | bool
+  tags: [prepare]
+
 - name: Create stack data directories
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
     owner: "{{ item.owner | default(deploy_user) }}"
     group: "{{ item.group | default(deploy_user) }}"
-    mode: "0755"
+    mode: "{{ item.mode | default('0755') }}"
     recurse: "{{ item.recurse | default(false) }}"
   loop: "{{ stack_directories }}"
   loop_control:
     label: "{{ item.path }}"
+  when: not (media_access_enabled | default(false) | bool and item.managed_by_media | default(false) | bool)
+  tags: [prepare]
+
+- name: Render the final shared media Compose override
+  ansible.builtin.template:
+    src: media-compose.yaml.j2
+    dest: "{{ deploy_base_dir }}/media-compose.yaml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0640"
+    backup: true
+  when: media_access_enabled | default(false) | bool
   tags: [prepare]
 
 - name: Render Docker Compose environment file
@@ -221,6 +280,7 @@
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0640"
+    backup: true
   tags: [prepare]
 
 - name: Install deploy start script
@@ -238,7 +298,7 @@
     dest: "/etc/systemd/system/{{ docker_stack_storage_service_name }}"
     owner: root
     group: root
-    mode: "0644"
+    mode: "0640"
   when: docker_stack_storage_containers | length > 0
   tags: [prepare, storage-boot]
 

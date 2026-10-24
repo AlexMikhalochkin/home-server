@@ -1,0 +1,151 @@
+---
+- name: Require explicit physical storage branches
+  ansible.builtin.assert:
+    that:
+      - storage_pool.branches | default([]) | length > 0
+      - storage_pool.branches | difference(storage_disks | map(attribute='mount_point') | list) | length == 0
+    fail_msg: Shared media access requires mounted, explicitly configured physical storage branches.
+
+- name: Require mounted physical branches and the media pool
+  ansible.builtin.command:
+    argv: [mountpoint, -q, "{{ item }}"]
+  loop: "{{ (storage_pool.branches + [storage_pool.mount_point]) | unique }}"
+  changed_when: false
+  check_mode: false
+
+- name: List existing Docker volumes
+  ansible.builtin.command:
+    argv: [docker, volume, ls, --format, "{{ '{{.Name}}' }}"]
+  register: media_access_existing_volumes
+  changed_when: false
+
+- name: Select private application volumes
+  ansible.builtin.set_fact:
+    media_access_selected_volumes: >-
+      {{ media_access_volumes
+         + (media_access_private_volumes if private_home_server_enabled | bool else []) }}
+
+- name: Create missing private application volumes
+  ansible.builtin.command:
+    argv: [docker, volume, create, "{{ item }}"]
+  loop: "{{ media_access_selected_volumes }}"
+  when: item not in media_access_existing_volumes.stdout_lines
+  changed_when: true
+
+- name: Resolve private application volume paths
+  ansible.builtin.command:
+    argv: [docker, volume, inspect, --format, "{{ '{{.Mountpoint}}' }}", "{{ item }}"]
+  loop: "{{ media_access_selected_volumes }}"
+  register: media_access_volume_paths
+  changed_when: false
+
+- name: Select private and shared directory roots
+  ansible.builtin.set_fact:
+    media_access_private_paths: >-
+      {{ [stack_env.PLEX_CONFIG_DIRECTORY ~ '/config']
+         + (media_access_volume_paths.results | map(attribute='stdout') | list) }}
+    media_access_shared_paths: "{{ (storage_pool.branches + media_access_directories) | unique }}"
+    media_access_roots: []
+    media_access_root_stats: {}
+
+- name: Describe the root-only directory policy
+  ansible.builtin.set_fact:
+    media_access_roots: >-
+      {{ media_access_roots + [{'path': item, 'private': item in media_access_private_paths}] }}
+  loop: "{{ media_access_private_paths + media_access_shared_paths }}"
+
+- name: Resolve canonical directory roots without following symlinked ancestors
+  ansible.builtin.command:
+    argv: [realpath, --canonicalize-missing, --, "{{ item.path }}"]
+  loop: "{{ media_access_roots }}"
+  register: media_access_canonical_roots
+  changed_when: false
+
+- name: Reject unsafe directory roots
+  ansible.builtin.assert:
+    that:
+      - item.stdout == item.item.path
+      - item.item.path.startswith('/')
+      - item.item.path not in ['/', '/var', '/var/lib', '/opt', '/mnt', deploy_base_dir]
+    fail_msg: "Refusing a noncanonical or symlinked media directory: {{ item.item.path }}"
+  loop: "{{ media_access_canonical_roots.results }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+
+- name: Inspect existing directory roots
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    follow: false
+  loop: "{{ media_access_roots }}"
+  register: media_access_directories_stat
+
+- name: Require directories rather than files at managed roots
+  ansible.builtin.assert:
+    that:
+      - not item.stat.exists or item.stat.isdir | default(false)
+    fail_msg: "Expected a media directory at {{ item.item.path }}"
+  loop: "{{ media_access_directories_stat.results }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+
+- name: Index existing root attributes
+  ansible.builtin.set_fact:
+    media_access_root_stats: "{{ media_access_root_stats | combine({item.item.path: item.stat}) }}"
+  loop: "{{ media_access_directories_stat.results }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+
+- name: Check whether existing roots contain data without traversing them
+  ansible.builtin.command:
+    argv: [find, -P, "{{ item.path }}", -mindepth, "1", -maxdepth, "1",
+           "!", -name, lost+found, -print, -quit]
+  loop: "{{ media_access_roots }}"
+  when: media_access_root_stats[item.path].exists
+  register: media_access_root_contents
+  changed_when: false
+
+- name: Require manual preparation of existing media data
+  ansible.builtin.assert:
+    that:
+      - >-
+        item.stdout | length == 0 or
+        (media_access_root_stats[item.item.path].gid == media_user_gid | int and
+         (media_access_root_stats[item.item.path].uid == media_user_uid | int
+          if item.item.private else media_access_root_stats[item.item.path].mode == '2770'))
+    fail_msg: >-
+      {{ item.item.path }} contains data that is not prepared for the media identity.
+      Stop writers, back up state and permissions, and complete the separate manual
+      preparation before configuring this host. Ansible will not migrate existing data.
+  loop: "{{ media_access_root_contents.results }}"
+  when: not item.skipped | default(false)
+  loop_control:
+    label: "{{ item.item.path }}"
+
+- name: Maintain private application directory roots
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ media_user }}"
+    group: "{{ media_group }}"
+    mode: "0700"
+    follow: false
+  loop: "{{ media_access_private_paths }}"
+
+- name: Maintain shared media directory roots without changing file owners
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    group: "{{ media_group }}"
+    mode: "2770"
+    follow: false
+  loop: "{{ media_access_shared_paths }}"
+
+- name: Inherit group access on new shared media
+  ansible.posix.acl:
+    path: "{{ item }}"
+    etype: group
+    permissions: rwx
+    default: true
+    follow: false
+    state: present
+  loop: "{{ media_access_shared_paths }}"

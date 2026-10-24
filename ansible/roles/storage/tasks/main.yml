@@ -98,7 +98,8 @@
   ansible.builtin.file:
     path: "{{ item.mount_point }}"
     state: directory
-    mode: "0755"
+    # The media role owns permission policy after disks and the pool are mounted.
+    mode: "{{ omit if media_access_enabled | default(false) | bool else '0755' }}"
   loop: "{{ storage_disks }}"
   loop_control:
     label: "{{ item.name }}"
@@ -107,7 +108,7 @@
   ansible.builtin.file:
     path: "{{ storage_pool.mount_point }}"
     state: directory
-    mode: "0755"
+    mode: "{{ omit if media_access_enabled | default(false) | bool else '0755' }}"
   when: storage_pool | length > 0
 
 - name: Mount configured disks and persist them in fstab

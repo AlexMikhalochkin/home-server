@@ -54,8 +54,8 @@
     - role: storage
       tags: [storage]
       when: storage_disks | length > 0
+    - role: docker_stack
+      tags: [stack]
     - role: samba
       tags: [samba]
       when: samba_enabled | bool
-    - role: docker_stack
-      tags: [stack]

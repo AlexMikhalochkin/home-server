@@ -24,12 +24,19 @@
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
-    owner: "{{ samba_user_uid }}"
-    group: "{{ samba_user_gid }}"
-    mode: "0775"
+    owner: "{{ omit if media_access_enabled | default(false) | bool else samba_user_uid }}"
+    group: "{{ media_group if media_access_enabled | default(false) | bool else samba_user_gid }}"
+    mode: "{{ '2770' if media_access_enabled | default(false) | bool else '0775' }}"
   loop: "{{ samba_shares }}"
   loop_control:
     label: "{{ item.name }}"
+
+- name: Add the authenticated Samba user to the shared media group
+  ansible.builtin.user:
+    name: "{{ samba_user }}"
+    groups: "{{ media_group }}"
+    append: true
+  when: media_access_enabled | default(false) | bool
 
 - name: Configure Samba
   ansible.builtin.template:

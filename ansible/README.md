@@ -36,6 +36,7 @@ laptop again.
 | `storage` | github | **Opt-in** (`storage_disks`). Mount existing disks by UUID/by-id; optionally combine them with MergerFS without formatting them |
 | `samba` | github | Share the configured downloads, TV series, and movies directories (optional) |
 | `docker_stack` | github | Select the inventory's Compose files; clone only enabled repositories; render `.env`; install `start.sh`; `docker compose up` |
+| `media_access` | inside `docker_stack`, Chris only | Provision the shared media identity, directory-root policy and tracked qBittorrent file ACLs; never migrate existing data |
 
 ### Why the deploy user's uid/gid aren't hardcoded
 
@@ -230,8 +231,8 @@ the Chris inventory for backwards compatibility.
    Actions authorized key
 3. Installs Docker Engine + Compose plugin
 4. Mounts every disk listed in `storage_disks` (empty by default — see below)
-5. Configures Samba shares for downloads, TV series, and movies, if
-   `samba_enabled: true`
+5. Provisions the media identity and maintains directory roots on Chris; populated
+   roots with incompatible ownership require separate manual preparation
 6. Clones `home-server` (public, HTTPS), plus the enabled private repositories, to
    `/opt/github-deploy/`
 7. Renders `/opt/github-deploy/home-server/.env` from inventory vars
@@ -239,10 +240,86 @@ the Chris inventory for backwards compatibility.
 9. Runs the inventory-selected Compose files and profiles (`docker-compose.yaml` plus the
    private overlay for Chris; only `docker-compose.newton.yaml` and `newton` for Newton)
    with `pull` and `up -d --wait --wait-timeout 360`
+10. Configures and starts Samba shares, if `samba_enabled: true`
 
-Only enabled repository directories are recursively assigned to the deploy user.
+Only enabled repository directories are assigned to the deploy user; on Chris this is
+nonrecursive so application-written configuration keeps its ownership and ACLs.
 Application data keeps its service-specific ownership, even if a later configuration
 task fails.
+
+### Shared media identity on Chris
+
+Chris enables `media_access_enabled`. Full configure provisions one locked, non-login
+system account/group, both named `media`. The OS assigns their free numeric UID/GID;
+Ansible writes the actual values into `.env` as `MEDIA_UID` and `MEDIA_GID`.
+The account has no home directory, sudo, SSH login, Docker group, or Samba password.
+Your authenticated Samba login remains `alex`, which is added to the `media` group.
+Guest access remains disabled.
+
+Plex and qBittorrent use the media IDs through their LinuxServer `PUID`/`PGID` settings
+and `UMASK=0007`. The official Jellyfin image uses an explicit Compose `user`, not
+`PUID`/`PGID`. Its GPU supplementary groups come from the actual `/dev/dri/card0` and
+`/dev/dri/renderD128` device GIDs. Jellyfin's media mounts become read-write.
+Its private config/cache volumes disable image-content copying so first startup
+preserves the media ownership prepared by Ansible.
+Application deletion settings still apply: enable Plex's media-deletion setting and
+grant deletion permissions to the intended Jellyfin users/libraries.
+
+Ansible renders `/opt/github-deploy/media-compose.yaml` and applies it **last**, after
+the public and private Compose files. This also overrides qBittorrent's IDs without
+editing the private repository. Always retain that file in manual Compose commands;
+the generated `start.sh` already uses the same file list. The standalone public
+Compose file retains its older defaults/read-only Jellyfin media mounts and is not
+the complete provisioned Chris deployment.
+The final overlay sets media restart policies to `no` during Compose startup. After
+successful startup, Ansible or `start.sh` applies the storage-aware `on-failure`
+policy; Docker must not autonomously boot these containers before the storage unit.
+
+The shared-media policy is group `media`, directory mode `2770`, and regular-file mode
+`0660`, without changing existing media file owners. Full configure maintains only the
+configured directory roots and their default group ACLs; it never walks existing files.
+Setgid directories and inherited ACLs preserve group access for newly created content.
+Samba forces the shared group and group-writable creation. The physical branches and
+pool must be mounted, and configured roots must not have symlinked ancestors.
+
+The three applications intentionally have write/delete access to the shared content.
+Deletion depends on access to the containing directory, not on owning the file.
+Deleting a file that qBittorrent is still seeding will make that torrent report missing
+data; coordinate those deletions in the applications. Files created with an explicitly
+restrictive mode or permissions changed manually can still need correction.
+
+Plex state, Jellyfin config/cache, and qBittorrent state remain private application data,
+not Samba shares. Tracked qBittorrent config under `home-server-configuration` receives
+explicit deploy-user and media-group ACLs so container ownership changes do not prevent
+future Git updates.
+Only the three known tracked qBittorrent files receive file-level group/deploy ACLs;
+the containing directory's default ACLs apply to future Git replacements.
+
+#### Existing data is a separate maintenance operation
+
+Before the first full Configure on an existing server, stop affected writers, back up
+private application state and permission metadata, and prepare existing media and
+application files for the media identity. This one-time operator work is deliberately
+outside normal Ansible deployment and is not automated by this repository.
+Ansible rejects obviously unprepared populated roots rather than recursively rewriting
+them. That root check is not a full audit of every descendant's permissions.
+
+Clean installs with empty directories need no data conversion. Reused disks, changed
+numeric media IDs after an OS reinstall, or newly attached disks with existing data
+can require manual preparation again. Never run Configure or Deploy during that work;
+there is no migration checkbox, readiness marker or migration-specific startup interlock.
+
+After manual preparation, run full **Ansible Configure**, environment **chris**, once;
+ordinary **Deploy** then reuses its `.env` and final override. Chris's generated manual
+fallback is `/opt/github-deploy/start.sh`, outside the configuration checkout.
+Both deployment paths refuse to discard tracked local changes in
+`home-server-configuration`: back up and reconcile application-written settings with
+that repository before retrying. They do not automatically commit or upload settings.
+
+Reconnect Samba clients after account/group changes. Verify create/edit/delete using
+disposable content through Samba and all three applications, plus writable application
+state, GPU transcoding and retained libraries/settings. Do not test deletion on content
+that must be retained.
 
 ### Full configure vs. fast deploy — same tasks, different tags
 
