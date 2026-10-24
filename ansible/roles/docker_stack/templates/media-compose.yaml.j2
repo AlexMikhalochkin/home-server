@@ -22,6 +22,9 @@ services:
 
   plex:
     restart: "no"
+    # LinuxServer's root initialization must prepare the private, media-owned /config.
+    cap_add:
+      - DAC_OVERRIDE
     environment:
       PUID: "${MEDIA_UID:?Run full Ansible Configure first}"
       PGID: "${MEDIA_GID:?Run full Ansible Configure first}"

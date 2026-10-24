@@ -257,7 +257,9 @@ Your authenticated Samba login remains `alex`, which is added to the `media` gro
 Guest access remains disabled.
 
 Plex and qBittorrent use the media IDs through their LinuxServer `PUID`/`PGID` settings
-and `UMASK=0007`. The official Jellyfin image uses an explicit Compose `user`, not
+and `UMASK=0007`. Plex's root initialization additionally needs `DAC_OVERRIDE` to prepare
+its private `0700` configuration directory; the application still runs as `media`.
+The official Jellyfin image uses an explicit Compose `user`, not
 `PUID`/`PGID`. Its GPU supplementary groups come from the actual `/dev/dri/card0` and
 `/dev/dri/renderD128` device GIDs. Jellyfin's media mounts become read-write.
 Its private config/cache volumes disable image-content copying so first startup

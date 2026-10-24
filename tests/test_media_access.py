@@ -181,6 +181,8 @@ class MediaAccessTests(unittest.TestCase):
                 self.assertEqual(services[service]["environment"]["PUID"], "912")
                 self.assertEqual(services[service]["environment"]["PGID"], "913")
                 self.assertEqual(services[service]["environment"]["UMASK"], "0007")
+            self.assertIn("DAC_OVERRIDE", services["plex"].get("cap_add", []))
+            self.assertEqual(services["plex"]["cap_drop"], ["ALL"])
             jellyfin = services["jellyfin"]
             self.assertEqual(jellyfin["user"], "912:913")
             self.assertEqual(set(map(str, jellyfin["group_add"])), {"44", "991"})
