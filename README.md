@@ -158,6 +158,9 @@ They cover host selection, literal shell inputs, branch lookup failures, storage
 Compose rendering, and the unchanged camera policy. CI also checks both Ansible playbooks
 for both inventories.
 
+CI installs pinned Python dependencies from wheels only. Sonar analyzes `tests/` as test
+code, not production code; the test implementations themselves do not require coverage.
+
 The root-only Linux ACL test is skipped on macOS/non-root runs. CI additionally runs it
 inside an isolated Python container with the `acl` package, exercising real shared-group
 creation, cross-user modification/deletion, outsider denial, and permission restoration.

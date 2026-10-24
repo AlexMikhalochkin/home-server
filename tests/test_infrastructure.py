@@ -1,3 +1,4 @@
+from fnmatch import fnmatchcase
 import json
 import os
 from pathlib import Path
@@ -55,6 +56,62 @@ def start_script(base, **overrides):
 
 
 class InfrastructureTests(unittest.TestCase):
+    def test_ci_python_installers_refuse_source_distributions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            for name in ("python", "python3"):
+                executable = base / name
+                executable.write_text(
+                    '#!/bin/bash\nprintf "%s\\0" "$@" >> "$CAPTURE"\n'
+                    'printf "\\n" >> "$CAPTURE"\n'
+                )
+                executable.chmod(0o755)
+            galaxy = base / "ansible-galaxy"
+            galaxy.write_text("#!/bin/bash\nexit 0\n")
+            galaxy.chmod(0o755)
+            calls = base / "calls"
+            for filename in ("ansible-configure.yaml", "deploy.yaml", "lint-docker.yaml"):
+                workflow = load(f".github/workflows/{filename}")
+                for job in workflow["jobs"].values():
+                    for step in job.get("steps", []):
+                        if step.get("name") != "Install Ansible":
+                            continue
+                        result = run(["bash", "-c", step["run"]], env=os.environ | {
+                            "PATH": f"{base}:{os.environ['PATH']}", "CAPTURE": str(calls),
+                        })
+                        self.assertEqual(result.returncode, 0, result.stderr)
+            installers = [line.split("\0")[:-1] for line in calls.read_text().splitlines()]
+            self.assertEqual(len(installers), 5)
+            for arguments in installers:
+                with self.subTest(arguments=arguments):
+                    self.assertEqual(arguments[:3], ["-m", "pip", "install"])
+                    self.assertIn("--only-binary=:all:", arguments)
+
+    def test_stack_data_defaults_deny_world_access_and_preserve_service_modes(self):
+        task = next(task for task in load("ansible/roles/docker_stack/tasks/main.yml")
+                    if task["name"] == "Create stack data directories")
+        expression = task["ansible.builtin.file"]["mode"]
+        default_mode = int(render(expression, {"item": {}}), 8)
+        self.assertEqual(default_mode & 0o007, 0)
+        self.assertEqual(default_mode & 0o770, 0o750)
+        for service_mode in ("0700", "2770"):
+            with self.subTest(mode=service_mode):
+                self.assertEqual(render(expression, {"item": {"mode": service_mode}}), service_mode)
+
+    def test_sonar_classifies_tests_separately_from_production_sources(self):
+        properties = dict(
+            line.split("=", 1) for line in (ROOT / "sonar-project.properties").read_text().splitlines()
+            if line and not line.startswith("#")
+        )
+        self.assertEqual(properties.get("sonar.sources"), ".")
+        self.assertEqual(properties.get("sonar.tests"), "tests")
+        exclusions = properties.get("sonar.exclusions", "").split(",")
+        for path in (ROOT / "tests").glob("*.py"):
+            with self.subTest(path=path.name):
+                relative = path.relative_to(ROOT).as_posix()
+                self.assertTrue(any(fnmatchcase(relative, pattern) for pattern in exclusions),
+                                "Tests must not also count as uncovered production files")
+
     def test_default_inventory_targets_only_chris(self):
         for directory in ("bootstrap", "github"):
             with self.subTest(directory=directory):

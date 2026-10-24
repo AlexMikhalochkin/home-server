@@ -82,7 +82,7 @@ must remain inside that encrypted file. The
 `FRIGATE_CONFIG_DIRECTORY` and `FRIGATE_STORAGE_DIRECTORY` paths are rendered
 into `.env`, and full configure renders
 `/opt/github-deploy/newton/frigate/config/config.yaml` from Vault with
-restrictive permissions. Ansible creates both directories without overwriting
+restrictive permissions. Ansible creates both directories with mode `0750` without overwriting
 existing Frigate state.
 
 When migrating the validated live prototype to Ansible management, stop and

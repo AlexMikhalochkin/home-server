@@ -70,8 +70,8 @@ jobs:
 
       - name: Install Ansible
         run: |
-          python3 -m pip install --upgrade "pip==24.3.1"
-          python3 -m pip install "ansible-core==2.16.14"
+          python3 -m pip install --only-binary=:all: --upgrade "pip==24.3.1"
+          python3 -m pip install --only-binary=:all: "ansible-core==2.16.14"
           ansible-galaxy collection install -r ansible/requirements.yml
 
       - name: Write SSH private key

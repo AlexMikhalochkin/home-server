@@ -148,7 +148,8 @@ class MediaAccessTests(unittest.TestCase):
         result = run(["ansible-inventory", "--list"], cwd=ROOT / "ansible/github")
         self.assertEqual(result.returncode, 0, result.stderr)
         variables = json.loads(result.stdout)["_meta"]["hostvars"]["chris"]
-        self.assertTrue("media_group" in variables, "Samba-only configuration must resolve the media group")
+        # Only show variable names on failure: inventory values may contain credentials.
+        self.assertIn("media_group", variables.keys(), "Samba-only configuration must resolve the media group")
         self.assertEqual(variables["media_group"], "media")
         group = next(task["ansible.builtin.file"]["group"]
                      for task in load("ansible/roles/samba/tasks/main.yml")
