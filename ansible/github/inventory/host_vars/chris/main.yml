@@ -54,7 +54,7 @@ storage_disks:
     mount_opts: defaults,nofail,x-systemd.device-timeout=10s
     format: false
   - name: media2
-    source: /dev/disk/by-uuid/58fec2b6-dcec-4b72-96e7-f5e16476567c
+    source: /dev/disk/by-uuid/145866da-9732-4a01-8b29-87ae3efbfb94
     mount_point: /mnt/media2
     fstype: ext4
     mount_opts: defaults,nofail,x-systemd.device-timeout=10s
