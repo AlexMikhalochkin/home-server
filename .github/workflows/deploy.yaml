@@ -42,7 +42,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch || 'main' }}
 
@@ -52,7 +52,7 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           audience: ${{ secrets.TS_AUDIENCE }}
           tags: ${{ vars.TAILSCALE_TAG }}
-          ping: ${{ vars.TAILSCALE_TARGET_HOST }}
+          ping: ${{ secrets.TAILSCALE_TARGET_HOST }}
 
       - name: Install Ansible
         run: |
@@ -71,9 +71,12 @@ jobs:
         working-directory: ansible/github
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
+          # Public run logs: show only changes and failures.
+          ANSIBLE_DISPLAY_OK_HOSTS: "false"
+          ANSIBLE_DISPLAY_SKIPPED_HOSTS: "false"
           DEPLOY_BRANCH: ${{ inputs.branch || 'main' }}
           TARGET_ENVIRONMENT: ${{ inputs.environment }}
-          TARGET_HOST: ${{ vars.TAILSCALE_TARGET_HOST }}
+          TARGET_HOST: ${{ secrets.TAILSCALE_TARGET_HOST }}
           SSH_USER: ${{ vars.SSH_USER }}
         run: |
           inventory="inventory/hosts.yml"

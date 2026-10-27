@@ -25,7 +25,7 @@ WebRTC port `8555` remain available.
 Select **newton** in either the **Ansible Configure** or **Deploy** workflow.
 Before the first Newton deployment, create the encrypted
 `ansible/vault/newton-frigate.yml` from its example and populate the four RTSP
-URLs for the cameras at `192.168.1.246` and `192.168.1.247`. Full configure
+URLs for both cameras. Full configure
 renders the private
 `/opt/github-deploy/newton/frigate/config/config.yaml` from Vault with
 restrictive permissions; the plaintext configuration is never committed.
@@ -51,21 +51,21 @@ container with the same name and ports.
 
 ## Chris service hostnames
 
-Create local DNS **A records pointing to the Chris server's LAN IP** (currently
-`192.168.100.116`) for each hostname below. Do not point these names at Docker
+Create local DNS **A records pointing to the Chris server's LAN IP**
+(shown as `<chris-lan-ip>`) for each hostname below. Do not point these names at Docker
 container IPs or the old server. These are HTTP URLs on port 80; HTTPS and public
 Internet access are not configured by this change.
 
 | Service | Hostname URL | Existing direct access, retained |
 |---|---|---|
-| Home Assistant | `http://ha.home.arpa/` | `http://192.168.100.116:8123/` |
-| Jellyfin | `http://jellyfin.home.arpa/` | `http://192.168.100.116:8096/` |
-| Plex | `http://plex.home.arpa/web/` | `http://192.168.100.116:32400/web/` |
-| Grafana | `http://grafana.home.arpa/` | `http://192.168.100.116:3000/` |
-| Dozzle | `http://dozzle.home.arpa/` | `http://192.168.100.116:8888/` |
-| Zigbee2MQTT | `http://z2m.home.arpa/` | `http://192.168.100.116:8080/` |
-| qBittorrent | `http://qbt.home.arpa/` | `http://192.168.100.116:6004/` |
-| Traefik | `http://traefik.home.arpa/dashboard/` | `http://192.168.100.116:8082/dashboard/` |
+| Home Assistant | `http://ha.home.arpa/` | `http://<chris-lan-ip>:8123/` |
+| Jellyfin | `http://jellyfin.home.arpa/` | `http://<chris-lan-ip>:8096/` |
+| Plex | `http://plex.home.arpa/web/` | `http://<chris-lan-ip>:32400/web/` |
+| Grafana | `http://grafana.home.arpa/` | `http://<chris-lan-ip>:3000/` |
+| Dozzle | `http://dozzle.home.arpa/` | `http://<chris-lan-ip>:8888/` |
+| Zigbee2MQTT | `http://z2m.home.arpa/` | `http://<chris-lan-ip>:8080/` |
+| qBittorrent | `http://qbt.home.arpa/` | `http://<chris-lan-ip>:6004/` |
+| Traefik | `http://traefik.home.arpa/dashboard/` | `http://<chris-lan-ip>:8082/dashboard/` |
 
 All existing host port mappings, Docker networks, and legacy `grafana.home` /
 `traefik.home` routing rules remain unchanged. Legacy DNS records still need to
@@ -121,11 +121,11 @@ is needed.
 Test through Traefik with a temporary host mapping on the request:
 
 ```bash
-curl --resolve grafana.home.arpa:80:192.168.100.116 \
+curl --resolve grafana.home.arpa:80:<chris-lan-ip> \
   http://grafana.home.arpa/api/health
-curl --resolve ha.home.arpa:80:192.168.100.116 \
+curl --resolve ha.home.arpa:80:<chris-lan-ip> \
   http://ha.home.arpa/
-curl http://192.168.100.116:8123/
+curl http://<chris-lan-ip>:8123/
 ```
 
 Verify every hostname and the old URLs, including Home Assistant and

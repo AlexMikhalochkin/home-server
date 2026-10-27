@@ -369,7 +369,7 @@
       docker compose
       {% for compose_file in docker_compose_files %}-f {{ compose_file }} {% endfor %}
       --env-file {{ home_server_dir }}/.env
-      {% for profile in docker_compose_all_profiles %}--profile {{ profile }} {% endfor %}
+      {% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %}
       pull
     chdir: "{{ home_server_dir }}"
   become: true
@@ -419,58 +419,10 @@
   become: true
   become_user: "{{ deploy_user }}"
   loop: "{{ docker_stack_storage_restart_policies.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
   when:
     - docker_compose_up | bool
     - docker_stack_storage_containers | length > 0
     - item.stdout != docker_stack_storage_restart_policy
   tags: [deploy, storage-media-policy]
-
-# OpenVPN is optional and independent of the normal stack. Services that need it must
-# explicitly opt into a routed design rather than sharing its network namespace.
-- name: Start optional VPN service
-  ansible.builtin.command:
-    cmd: >-
-      docker compose
-      {% for compose_file in docker_compose_files %}-f {{ compose_file }} {% endfor %}
-      --env-file {{ home_server_dir }}/.env
-      --profile {{ vpn_profile }}
-      up -d --wait --wait-timeout 360 --remove-orphans
-    chdir: "{{ home_server_dir }}"
-  become: true
-  become_user: "{{ deploy_user }}"
-  register: docker_compose_vpn_up_result
-  changed_when: docker_compose_vpn_up_result.rc == 0
-  failed_when: false
-  when: docker_compose_up and vpn_enabled | bool
-  tags: [deploy]
-
-- name: Warn if optional VPN service failed to start
-  ansible.builtin.debug:
-    msg: >-
-      openvpn failed to start (rc={{ docker_compose_vpn_up_result.rc }}).
-      This is usually an external VPN provider/account issue, not an Ansible problem — check
-      your VPN account status/credentials, then re-run this playbook (or just the 'stack' tag)
-      once resolved. Rest of the stack is unaffected. Details: {{ docker_compose_vpn_up_result.stderr }}
-  when:
-    - docker_compose_up and vpn_enabled | bool
-    - docker_compose_vpn_up_result.rc != 0
-  tags: [deploy]
-
-- name: Show running containers
-  ansible.builtin.command:
-    cmd: >-
-      docker compose
-      {% for compose_file in docker_compose_files %}-f {{ compose_file }} {% endfor %}
-      {% for profile in docker_compose_all_profiles %}--profile {{ profile }} {% endfor %}
-      ps
-    chdir: "{{ home_server_dir }}"
-  become: true
-  become_user: "{{ deploy_user }}"
-  register: docker_compose_ps
-  changed_when: false
-  tags: [deploy]
-
-- name: Docker stack status
-  ansible.builtin.debug:
-    msg: "{{ docker_compose_ps.stdout_lines }}"
-  tags: [deploy]

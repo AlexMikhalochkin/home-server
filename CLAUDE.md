@@ -69,13 +69,10 @@ Services are grouped by profile to control which run on a given host:
 
 | Profile | Services |
 |---|---|
-| `chris` | dozzle, grafana, home-assistant, jellyfin, matterbridge, mosquitto, node-exporter, plex, prometheus, traefik |
-| `chris-vpn` | openvpn (optional) |
+| `chris` | dozzle, grafana, home-assistant, jellyfin, matterbridge, mosquitto, node-exporter, openvpn, plex, prometheus, traefik |
 | `chris-zigbee` | zigbee2mqtt (only when USB dongle physically present) |
 | `newton` | Frigate-only Newton environment (selected through its dedicated Compose file) |
 | `local` | mosquitto variants for other hosts |
-
-The `chris-vpn` profile is started in a separate best-effort `docker compose up` pass so VPN failures cannot abort the rest of the stack. Home Assistant and Jellyfin use their own Docker bridge networking and are not dependent on OpenVPN.
 
 ### Key Design Decisions
 
@@ -88,7 +85,7 @@ The `chris-vpn` profile is started in a separate best-effort `docker compose up`
   is prepared manually, with backups, outside this repository. Ansible maintains roots
   and known configuration-file ACLs only; fast deploy must not create accounts or migrate
   permissions. Private configuration updates must not discard application-written settings.
-- **`openvpn` network namespace sharing** — `home-assistant` and `jellyfin` use `network_mode: "service:openvpn"` so their traffic routes through the VPN.
+- **`openvpn` network namespace sharing** — `home-assistant` uses `network_mode: "service:openvpn"`; the VPN is always on and part of the `chris` profile, so a VPN failure fails the deploy.
 
 ### Secrets
 

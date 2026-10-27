@@ -43,9 +43,6 @@ def start_script(base, **overrides):
         "deploy_base_dir": str(base),
         "docker_compose_files": [str(base / "home-server/docker-compose.yaml")],
         "docker_compose_profiles": ["chris"],
-        "docker_compose_all_profiles": ["chris"],
-        "vpn_profile": "chris-vpn",
-        "vpn_enabled": False,
         "home_server_configuration_enabled": False,
         "private_home_server_enabled": False,
         "docker_stack_storage_containers": [],
@@ -193,12 +190,15 @@ class InfrastructureTests(unittest.TestCase):
                 workflow = load(f".github/workflows/{filename}")
                 steps = next(iter(workflow["jobs"].values()))["steps"]
                 step = steps[-1]
+                # Public run logs must not dump ok/skipped results.
+                self.assertEqual(step["env"]["ANSIBLE_DISPLAY_OK_HOSTS"], "false")
+                self.assertEqual(step["env"]["ANSIBLE_DISPLAY_SKIPPED_HOSTS"], "false")
                 for host in ("chris", "newton"):
                     with self.subTest(workflow=filename, host=host):
                         values = {
                             "inputs.environment": host,
                             "inputs.branch || 'main'": "fix/$HOME",
-                            "vars.TAILSCALE_TARGET_HOST": "127.0.0.1",
+                            "secrets.TAILSCALE_TARGET_HOST": "127.0.0.1",
                             "vars.SSH_USER": "github",
                             "vars.ADMIN_SSH_USER": "alex",
                             "secrets.ANSIBLE_BECOME_PASSWORD": "test-only",

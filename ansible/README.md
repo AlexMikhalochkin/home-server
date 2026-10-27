@@ -96,7 +96,7 @@ Newton's GitHub environment needs these values:
 
 | Name | Kind | Purpose |
 |------|------|---------|
-| `TAILSCALE_TARGET_HOST` | var | Newton's Tailscale IP (not its `192.168.1.x` LAN address) |
+| `TAILSCALE_TARGET_HOST` | secret | Newton's Tailscale IP (not its LAN address); a secret so it is masked in public run logs |
 | `ADMIN_SSH_USER` | var | Sudo-capable bootstrap admin (currently `alex`) |
 | `SSH_USER` | var | Restricted deploy user for fast deploys (currently `github`) |
 | `TAILSCALE_TAG` | var | Tailscale ACL tag for the runner |
@@ -201,7 +201,7 @@ GitHub environment:
 
 | Name | Kind | Value |
 |------|------|-------|
-| `TAILSCALE_TARGET_HOST` | var | Tailscale IP of the server (e.g. `100.91.97.86`) |
+| `TAILSCALE_TARGET_HOST` | secret | Tailscale IP of the server; a secret so it is masked in public run logs |
 | `ADMIN_SSH_USER` | var | The sudo-capable admin user from step 1 (e.g. `alex`) |
 | `TAILSCALE_TAG` | var | Tailscale ACL tag for the GitHub Actions runner |
 | `SSH_PRIVATE_KEY` | secret | Private half of the keypair from setup step 1 (shared with `deploy.yaml`) |
@@ -331,7 +331,7 @@ split into two tags.
 | Tag | Runs | Used by |
 |-----|------|---------|
 | `prepare` | Deploy user SSH keys, directories, `.env`, `start.sh` — one-time/rarely-changing environment setup | `site.yml` full run only |
-| `deploy` | Clone/pull the 3 repos, `docker compose pull` + `up` (core stack, then VPN-dependent group), show status | Both the full run **and** the fast `deploy.yaml` workflow |
+| `deploy` | Clone/pull the 3 repos, `docker compose pull` + `up` | Both the full run **and** the fast `deploy.yaml` workflow |
 
 `deploy.yaml` runs `ansible-playbook site.yml --tags deploy`, connected as the restricted
 `github` deploy user — no admin/sudo password or vault password needed, since none of the
@@ -348,7 +348,6 @@ errors stop deployment.
 Compose waits up to 360 seconds for the selected services to be running, and healthy
 where a health check exists. This includes Frigate's built-in API health check and
 its five-minute startup grace period.
-The VPN profile still runs in a separate best-effort pass.
 
 `start.sh` still exists (for SSHing in directly without CI), but is no longer the primary
 path — keep it in mind if you ever change the compose/profile logic, since it duplicates a

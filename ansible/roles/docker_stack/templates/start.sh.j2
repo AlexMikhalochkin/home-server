@@ -9,8 +9,6 @@ BRANCH="${1:-$DEFAULT_BRANCH}"
 BASE="{{ deploy_base_dir }}"
 COMPOSE_FILE_ARGS=({% for compose_file in docker_compose_files %}-f "{{ compose_file }}" {% endfor %})
 PROFILE_ARGS=({% for profile in docker_compose_profiles %}--profile {{ profile }} {% endfor %})
-ALL_PROFILE_ARGS=({% for profile in docker_compose_all_profiles %}--profile {{ profile }} {% endfor %})
-VPN_PROFILE_ARGS=(--profile {{ vpn_profile }})
 HOME_SERVER_DIR="${BASE}/home-server"
 HOME_SERVER_CONFIGURATION_DIR="${BASE}/home-server-configuration"
 PRIVATE_HOME_SERVER_DIR="${BASE}/private-home-server"
@@ -66,7 +64,7 @@ cd "${HOME_SERVER_DIR}"
 docker compose \
   "${COMPOSE_FILE_ARGS[@]}" \
   --env-file "${HOME_SERVER_DIR}/.env" \
-  "${ALL_PROFILE_ARGS[@]}" \
+  "${PROFILE_ARGS[@]}" \
   pull
 docker compose \
   "${COMPOSE_FILE_ARGS[@]}" \
@@ -76,20 +74,6 @@ docker compose \
 
 {% if docker_stack_storage_containers | length > 0 %}
 docker update --restart={{ docker_stack_storage_restart_policy }} {{ docker_stack_storage_containers | join(' ') }}
-{% endif %}
-
-{% if vpn_enabled | bool %}
-# OpenVPN and the VPN-routed Home Assistant profile are optional. Start them separately
-# and best-effort so missing credentials cannot abort the normal stack.
-if ! docker compose \
-  "${COMPOSE_FILE_ARGS[@]}" \
-  --env-file "${HOME_SERVER_DIR}/.env" \
-  "${VPN_PROFILE_ARGS[@]}" \
-  up -d --wait --wait-timeout 360 --remove-orphans; then
-    echo "WARNING: openvpn failed to start. This is usually an" \
-         "external VPN provider/account issue, not a stack problem — check your VPN" \
-         "account status/credentials, then re-run this script."
-fi
 {% endif %}
 
 docker image prune -a -f

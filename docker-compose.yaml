@@ -67,7 +67,7 @@ services:
     restart: unless-stopped
     cap_drop:
       - ALL
-    profiles: [ chris-vpn ]
+    profiles: [ chris ]
     security_opt:
       - no-new-privileges:true
 
@@ -168,7 +168,7 @@ services:
       - SETUID
     cap_drop:
       - ALL
-    profiles: [ chris-vpn ]
+    profiles: [ chris ]
     read_only: true
     security_opt:
       - no-new-privileges:true

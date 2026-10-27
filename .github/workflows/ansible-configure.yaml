@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch || 'main' }}
 
@@ -44,12 +44,12 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           ANSIBLE_BECOME_PASSWORD: ${{ secrets.ANSIBLE_BECOME_PASSWORD }}
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
-          TARGET_HOST: ${{ vars.TAILSCALE_TARGET_HOST }}
+          TARGET_HOST: ${{ secrets.TAILSCALE_TARGET_HOST }}
           SSH_USER: ${{ vars.ADMIN_SSH_USER }}
           TARGET_ENVIRONMENT: ${{ inputs.environment }}
         run: |
           missing=()
-          [ -z "$TARGET_HOST" ] && missing+=("vars.TAILSCALE_TARGET_HOST")
+          [ -z "$TARGET_HOST" ] && missing+=("secrets.TAILSCALE_TARGET_HOST")
           [ -z "$SSH_USER" ] && missing+=("vars.ADMIN_SSH_USER")
           [ -z "$SSH_PRIVATE_KEY" ] && missing+=("secrets.SSH_PRIVATE_KEY")
           [ -z "$ANSIBLE_BECOME_PASSWORD" ] && missing+=("secrets.ANSIBLE_BECOME_PASSWORD")
@@ -66,7 +66,7 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           audience: ${{ secrets.TS_AUDIENCE }}
           tags: ${{ vars.TAILSCALE_TAG }}
-          ping: ${{ vars.TAILSCALE_TARGET_HOST }}
+          ping: ${{ secrets.TAILSCALE_TARGET_HOST }}
 
       - name: Install Ansible
         run: |
@@ -92,10 +92,13 @@ jobs:
         working-directory: ansible/github
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
+          # Public run logs: show only changes and failures.
+          ANSIBLE_DISPLAY_OK_HOSTS: "false"
+          ANSIBLE_DISPLAY_SKIPPED_HOSTS: "false"
           ANSIBLE_BECOME_PASSWORD: ${{ secrets.ANSIBLE_BECOME_PASSWORD }}
           DEPLOY_BRANCH: ${{ inputs.branch || 'main' }}
           TARGET_ENVIRONMENT: ${{ inputs.environment }}
-          TARGET_HOST: ${{ vars.TAILSCALE_TARGET_HOST }}
+          TARGET_HOST: ${{ secrets.TAILSCALE_TARGET_HOST }}
           SSH_USER: ${{ vars.ADMIN_SSH_USER }}
         run: |
           inventory="inventory/hosts.yml"

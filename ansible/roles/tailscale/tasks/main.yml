@@ -65,6 +65,6 @@
 - name: Tailscale IP for GitHub configuration
   ansible.builtin.debug:
     msg: >-
-      Add this Tailscale IP to your GitHub environment variable
-      (e.g. CHRIS_TAILSCALE_IP): {{ tailscale_ipv4.stdout | trim }}
+      Add this Tailscale IP as the TAILSCALE_TARGET_HOST secret of the GitHub
+      environment: {{ tailscale_ipv4.stdout | trim }}
   become: false

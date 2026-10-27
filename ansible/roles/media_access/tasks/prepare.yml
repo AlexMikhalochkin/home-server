@@ -98,7 +98,7 @@
 - name: Check whether existing roots contain data without traversing them
   ansible.builtin.command:
     argv: [find, -P, "{{ item.path }}", -mindepth, "1", -maxdepth, "1",
-           "!", -name, lost+found, -print, -quit]
+           "!", -name, lost+found, -printf, ".", -quit]
   loop: "{{ media_access_roots }}"
   when: media_access_root_stats[item.path].exists
   register: media_access_root_contents
