@@ -37,6 +37,23 @@
     update_cache: true
   notify: Restart docker
 
+- name: Configure Docker daemon log rotation
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: "{{ {'log-driver': 'json-file',
+                  'log-opts': {'max-size': docker_log_max_size | string,
+                               'max-file': docker_log_max_file | string}}
+                 | to_nice_json }}\n"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: Restart docker
+
+# Restart before docker_stack runs so `compose up` starts any containers the restart stopped.
+- name: Apply pending Docker daemon restart
+  ansible.builtin.meta: flush_handlers
+
 - name: Enable and start Docker
   ansible.builtin.systemd:
     name: docker

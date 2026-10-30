@@ -237,6 +237,25 @@ class InfrastructureTests(unittest.TestCase):
                 path = render(attributes["path"], {"deploy_user_home": "/opt/github-deploy"})
                 self.assertNotEqual(path, "/opt/github-deploy", task["name"])
 
+    def test_docker_daemon_rotates_container_logs_before_stack_starts(self):
+        tasks = load("ansible/roles/docker/tasks/main.yml")
+        names = [task["name"] for task in tasks]
+        task = tasks[names.index("Configure Docker daemon log rotation")]
+        defaults = load("ansible/roles/docker/defaults/main.yml")
+        template = task["ansible.builtin.copy"]["content"].replace(
+            "| to_nice_json", "| tojson"
+        )
+        config = json.loads(render(template, defaults))
+        self.assertEqual(config, {
+            "log-driver": "json-file",
+            "log-opts": {"max-size": "10m", "max-file": "3"},
+        })
+        self.assertTrue(task["ansible.builtin.copy"]["backup"])
+        self.assertEqual(task["notify"], "Restart docker")
+        flush = names.index("Apply pending Docker daemon restart")
+        self.assertGreater(flush, names.index("Configure Docker daemon log rotation"))
+        self.assertEqual(tasks[flush]["ansible.builtin.meta"], "flush_handlers")
+
     def test_samba_password_is_passed_literally(self):
         task = next(
             task for task in load("ansible/roles/samba/tasks/main.yml")

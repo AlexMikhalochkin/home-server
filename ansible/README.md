@@ -32,7 +32,7 @@ laptop again.
 | `ssh_ci_access` | bootstrap | Install the GitHub Actions public key for the admin user (`ansible_user`, e.g. `alex`), so step 2 can take over. No-op until `github_ci_ssh_public_key` is set. |
 | `common` | github | `apt update/upgrade`, base packages (incl. `acl`, needed for `become_user` tasks), timezone |
 | `deploy_user` | github | Create the dedicated `github` deploy user/group (uid/gid picked by the OS — see note below), install its GitHub Actions authorized key |
-| `docker` | github | Docker Engine + Compose plugin, adds the deploy user to the `docker` group |
+| `docker` | github | Docker Engine + Compose plugin, default container log rotation (`daemon.json`), adds the deploy user to the `docker` group |
 | `storage` | github | **Opt-in** (`storage_disks`). Mount existing disks by UUID/by-id; optionally combine them with MergerFS without formatting them |
 | `samba` | github | Share the configured downloads, TV series, and movies directories (optional) |
 | `docker_stack` | github | Select the inventory's Compose files; clone only enabled repositories; render `.env`; install `start.sh`; `docker compose up` |

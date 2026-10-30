@@ -1,3 +1,6 @@
 ---
 docker_users: []
 docker_install_compose_plugin: true
+# Default json-file rotation; applies only to containers created after the daemon restart.
+docker_log_max_size: 10m
+docker_log_max_file: 3
