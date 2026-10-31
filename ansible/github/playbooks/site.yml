@@ -56,6 +56,9 @@
       when: storage_disks | length > 0
     - role: docker_stack
       tags: [stack]
+    - role: backup
+      tags: [backup]
+      when: backup_enabled | bool
     - role: samba
       tags: [samba]
       when: samba_enabled | bool

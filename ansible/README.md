@@ -37,6 +37,7 @@ laptop again.
 | `samba` | github | Share the configured downloads, TV series, and movies directories (optional) |
 | `docker_stack` | github | Select the inventory's Compose files; clone only enabled repositories; render `.env`; install `start.sh`; `docker compose up` |
 | `media_access` | inside `docker_stack`, Chris only | Provision the shared media identity, directory-root policy and tracked qBittorrent file ACLs; never migrate existing data |
+| `backup` | github, full configure only (`backup_enabled`) | Install restic, `home-server-backup` and nightly/monthly systemd timers that back app state up to S3 — see [Backups](#backups) |
 
 ### Why the deploy user's uid/gid aren't hardcoded
 
@@ -447,13 +448,76 @@ The private `private-home-server` Compose overlay must use the generated
 The root is mounted at `/data` so qBittorrent can move completed downloads into
 the media library without copying between Docker mounts.
 
+## Backups
+
+App state is backed up nightly with [restic](https://restic.net/) to S3 by the `backup` role
+(design: [`docs/superpowers/specs/2026-10-30-app-state-and-backups-design.md`](../docs/superpowers/specs/2026-10-30-app-state-and-backups-design.md)).
+
+- **Backed up:** everything a service writes or its UI can change — Home Assistant,
+  Zigbee2MQTT, qBittorrent, Jackett, Plex (database and preferences), Jellyfin (data and
+  configuration) and Grafana. The list is `backup_paths` in
+  `inventory/host_vars/chris/main.yml`.
+- **Not backed up:** media/downloads, caches, artwork/metadata, logs, Prometheus history and
+  Home Assistant's own `backups/` folder (`backup_excludes`). These are replaceable.
+- **When:** daily at 04:00 (±10 min). Home Assistant, Zigbee2MQTT, Plex, Jellyfin,
+  qBittorrent, Jackett and Grafana are stopped for the snapshot (about a minute) so their
+  databases are consistent, and are always restarted, even if the backup fails.
+- **Retention:** 7 daily, 4 weekly, 6 monthly snapshots.
+- **Verification:** on the 1st of each month, `restic check --read-data-subset=5%` and a
+  restore of the canary file from the last *successful* backup's snapshot.
+- **Status:** the Grafana **Backups** dashboard (last successful backup age, last backup and
+  check exit codes, skipped missing paths) from node-exporter textfile metrics in
+  `/var/lib/node-exporter/textfile`.
+
+### One-time S3 setup
+
+1. Create a private bucket `alex-home-servers-backups` in `eu-central-1` with *Block all public
+   access* and default encryption (SSE-S3) enabled.
+2. Create an IAM user for backups only, with this policy and an access key:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Action": "s3:ListBucket",
+         "Resource": "arn:aws:s3:::alex-home-servers-backups"
+       },
+       {
+         "Effect": "Allow",
+         "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+         "Resource": "arn:aws:s3:::alex-home-servers-backups/*"
+       }
+     ]
+   }
+   ```
+3. Add to `vault/secrets.yml` (`ansible-vault edit vault/secrets.yml`):
+   `backup_restic_password` (generate with `openssl rand -hex 32`),
+   `backup_aws_access_key_id`, `backup_aws_secret_access_key`.
+
+> **Store `backup_restic_password` in your password manager too — without it the backups
+> cannot be read.** The vault copy alone is not enough if you lose the vault password.
+
+The restic repository is initialised automatically by the first backup run.
+
+### Operations (on the server)
+
+```bash
+sudo systemctl start home-server-backup          # back up now
+sudo systemctl start home-server-backup-check    # verify now
+journalctl -u home-server-backup -n 100          # last run's log
+systemctl list-timers 'home-server-backup*'      # next scheduled runs
+sudo sh -c 'set -a; . /etc/restic/env; restic snapshots'   # list snapshots
+```
+
 ## Configuration layers
 
 | What | Where | In git? |
 |------|--------|---------|
 | LAN / Tailscale IP (local runs) | `inventory/host_vars/chris/local.yml` | No |
 | GitHub Actions public key, stack paths, profile, timezone, media disk settings | `inventory/host_vars/chris/main.yml` | Yes |
-| Tailscale auth key, Samba password, GitHub deploy keys | `vault/secrets.yml` | Yes (encrypted) |
+| Tailscale auth key, Samba password, GitHub deploy keys, backup password and S3 keys | `vault/secrets.yml` | Yes (encrypted) |
 | Admin SSH private key, become password, vault password | GitHub environment secrets | No |
 
 ## Ubuntu sudo note

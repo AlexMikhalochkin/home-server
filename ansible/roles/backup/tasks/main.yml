@@ -1,0 +1,108 @@
+---
+- name: Require backup repository, credentials and paths
+  ansible.builtin.assert:
+    that:
+      - backup_restic_repository | length > 0
+      - backup_restic_password | length > 0
+      - backup_aws_access_key_id | length > 0
+      - backup_aws_secret_access_key | length > 0
+      - backup_paths | length > 0
+    fail_msg: >-
+      Backups are enabled but not configured. Set backup_restic_repository and backup_paths in
+      inventory, and backup_restic_password, backup_aws_access_key_id and
+      backup_aws_secret_access_key in ansible/vault/secrets.yml.
+    quiet: true
+
+- name: Install restic
+  ansible.builtin.apt:
+    name:
+      - restic
+      - python3
+    state: present
+
+- name: Create backup directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: /etc/restic, mode: "0700" }
+    - { path: "{{ backup_state_dir }}", mode: "0700" }
+    - { path: "{{ backup_textfile_dir }}", mode: "0755" }
+
+- name: Render restic credentials
+  ansible.builtin.template:
+    src: restic.env.j2
+    dest: /etc/restic/env
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Render backup settings
+  ansible.builtin.template:
+    src: backup.conf.j2
+    dest: /etc/restic/backup.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Write backup paths
+  ansible.builtin.copy:
+    content: "{{ backup_paths | join('\n') }}\n"
+    dest: /etc/restic/paths
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Write backup excludes
+  ansible.builtin.copy:
+    content: "{{ backup_excludes | join('\n') }}\n"
+    dest: /etc/restic/excludes
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Write containers stopped during backup
+  ansible.builtin.copy:
+    content: "{{ backup_quiesce_containers | join('\n') }}\n"
+    dest: /etc/restic/quiesce-containers
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install backup command
+  ansible.builtin.copy:
+    src: home-server-backup
+    dest: /usr/local/sbin/home-server-backup
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install backup systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - home-server-backup.service
+    - home-server-backup.timer
+    - home-server-backup-check.service
+    - home-server-backup-check.timer
+  notify: Reload systemd
+
+- name: Apply systemd unit changes
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable backup timers
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - home-server-backup.timer
+    - home-server-backup-check.timer

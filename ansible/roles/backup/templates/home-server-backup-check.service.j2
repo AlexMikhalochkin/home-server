@@ -1,0 +1,14 @@
+# Managed by Ansible — roles/backup
+[Unit]
+Description=Verify home-server backups (restic check and canary restore)
+Wants=network-online.target
+After=network-online.target home-server-backup.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/home-server-backup check
+CacheDirectory=restic
+Environment=RESTIC_CACHE_DIR=/var/cache/restic
+TimeoutStartSec=4h
+Nice=10
+IOSchedulingClass=idle

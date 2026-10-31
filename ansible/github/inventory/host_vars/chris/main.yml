@@ -97,3 +97,43 @@ stack_env:
   QBITTORRENT_ROOT_PATH: /mnt/media
   TIMEZONE: Europe/Berlin
   HOST_IP: "0.0.0.0"
+
+# Nightly restic backup of app state (roles/backup; secrets in ansible/vault/secrets.yml).
+# Paths are where state lives today; they move to /srv/appdata in Part 2 of
+# docs/superpowers/specs/2026-10-30-app-state-and-backups-design.md.
+backup_enabled: true
+backup_restic_repository: s3:s3.eu-central-1.amazonaws.com/alex-home-servers-backups/chris
+backup_paths:
+  - "{{ stack_env.HOME_ASSISTANT_CONFIGURATION_DIRECTORY }}"
+  # Still bind-mounted from the configuration checkout and edited by the apps' UIs.
+  - /opt/github-deploy/home-server-configuration/home-assistant
+  - /opt/github-deploy/home-server-configuration/zigbee2mqtt
+  - /opt/github-deploy/home-server-configuration/qbittorrent
+  - "{{ stack_env.PLEX_CONFIG_DIRECTORY }}/config"
+  - /var/lib/docker/volumes/home-server_grafana-data/_data
+  - /var/lib/docker/volumes/home-server_jellyfin-config/_data
+  - /var/lib/docker/volumes/home-server_qbittorrent-data/_data
+  - /var/lib/docker/volumes/home-server_jackett-data/_data
+# Rebuildable caches, artwork, logs and redundant app-native backups.
+backup_excludes:
+  - "{{ backup_plex_dir }}/Cache"
+  - "{{ backup_plex_dir }}/Media"
+  - "{{ backup_plex_dir }}/Metadata"
+  - "{{ backup_plex_dir }}/Codecs"
+  - "{{ backup_plex_dir }}/Drivers"
+  - "{{ backup_plex_dir }}/Logs"
+  - "{{ backup_plex_dir }}/Crash Reports"
+  - /var/lib/docker/volumes/home-server_jellyfin-config/_data/metadata
+  - /var/lib/docker/volumes/home-server_jellyfin-config/_data/log
+  - /opt/github-deploy/home-server-configuration/zigbee2mqtt/log
+  - "{{ stack_env.HOME_ASSISTANT_CONFIGURATION_DIRECTORY }}/home-assistant.log*"
+  - "{{ stack_env.HOME_ASSISTANT_CONFIGURATION_DIRECTORY }}/backups"
+backup_plex_dir: "{{ stack_env.PLEX_CONFIG_DIRECTORY }}/config/Library/Application Support/Plex Media Server"
+backup_quiesce_containers:
+  - home-assistant
+  - zigbee2mqtt
+  - plex
+  - jellyfin
+  - qbittorrent
+  - jackett
+  - grafana

@@ -1,0 +1,14 @@
+# Managed by Ansible — roles/backup
+[Unit]
+Description=Back up home-server app state to S3 (restic)
+Wants=network-online.target
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/home-server-backup backup
+CacheDirectory=restic
+Environment=RESTIC_CACHE_DIR=/var/cache/restic
+TimeoutStartSec=2h
+Nice=10
+IOSchedulingClass=idle

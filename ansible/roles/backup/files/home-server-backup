@@ -1,0 +1,268 @@
+#!/usr/bin/env python3
+"""Nightly restic backup of home-server app state, with a monthly integrity check.
+
+Managed by Ansible (roles/backup). Configuration lives in $HOME_SERVER_BACKUP_CONFIG_DIR
+(default /etc/restic); see ansible/README.md "Backups".
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import secrets
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+
+CANARY_MISMATCH = 10
+# Home Assistant and Plex can need longer than Docker's 10 s default to shut down cleanly.
+STOP_TIMEOUT_SECONDS = 120
+LAST_SUCCESS_FILE = "last-success.json"
+BACKUP_METRICS = "home_server_backup.prom"
+CHECK_METRICS = "home_server_backup_check.prom"
+LAST_SUCCESS = "home_server_backup_last_success_timestamp_seconds"
+CHECK_LAST_SUCCESS = "home_server_backup_check_last_success_timestamp_seconds"
+
+
+@dataclass
+class Config:
+    directory: Path
+    env: dict[str, str]
+    paths: list[str]
+    quiesce: list[str]
+    settings: dict[str, str]
+
+    @property
+    def textfile_dir(self) -> Path:
+        return Path(self.settings["TEXTFILE_DIR"])
+
+    @property
+    def state_dir(self) -> Path:
+        return Path(self.settings["STATE_DIR"])
+
+    @property
+    def canary(self) -> Path:
+        return self.state_dir / "canary"
+
+
+def log(message: str) -> None:
+    print(f"home-server-backup: {message}", file=sys.stderr, flush=True)
+
+
+def read_lines(path: Path) -> list[str]:
+    if not path.exists():
+        return []
+    return [line.strip() for line in path.read_text().splitlines()
+            if line.strip() and not line.lstrip().startswith("#")]
+
+
+def read_key_values(path: Path) -> dict[str, str]:
+    return dict(line.split("=", 1) for line in read_lines(path) if "=" in line)
+
+
+def load_config() -> Config:
+    directory = Path(os.environ.get("HOME_SERVER_BACKUP_CONFIG_DIR", "/etc/restic"))
+    return Config(
+        directory=directory,
+        env=read_key_values(directory / "env"),
+        paths=read_lines(directory / "paths"),
+        quiesce=read_lines(directory / "quiesce-containers"),
+        settings=read_key_values(directory / "backup.conf"),
+    )
+
+
+def restic(cfg: Config, *arguments: str, capture: bool = False) -> subprocess.CompletedProcess:
+    return subprocess.run(["restic", *arguments], env=os.environ | cfg.env, text=True,
+                          stdout=subprocess.PIPE if capture else None)
+
+
+def docker(*arguments: str, capture: bool = False) -> subprocess.CompletedProcess:
+    return subprocess.run(["docker", *arguments], text=True,
+                          stdout=subprocess.PIPE if capture else None)
+
+
+def read_previous(path: Path, name: str) -> float:
+    try:
+        for line in path.read_text().splitlines():
+            parts = line.split()
+            if len(parts) == 2 and parts[0] == name:
+                return float(parts[1])
+    except (OSError, ValueError):
+        pass
+    return 0.0
+
+
+def format_value(value: float) -> str:
+    return str(int(value)) if float(value).is_integer() else repr(float(value))
+
+
+def write_metrics(path: Path, metrics: dict[str, float]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = "".join(f"{name} {format_value(value)}\n" for name, value in metrics.items())
+    handle, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    try:
+        with os.fdopen(handle, "w") as stream:
+            stream.write(body)
+        os.chmod(temporary, 0o644)
+        os.replace(temporary, path)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
+
+
+def restic_summary(output: str) -> dict:
+    for line in output.splitlines():
+        try:
+            message = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(message, dict) and message.get("message_type") == "summary":
+            return message
+    return {}
+
+
+def ensure_repository(cfg: Config) -> int:
+    if restic(cfg, "cat", "config", capture=True).returncode == 0:
+        return 0
+    log("repository not found; initialising")
+    return restic(cfg, "init").returncode
+
+
+def running_containers(wanted: list[str]) -> list[str]:
+    result = docker("ps", "--format", "{{.Names}}", capture=True)
+    running = set(result.stdout.split()) if result.returncode == 0 else set()
+    return [name for name in wanted if name in running]
+
+
+def exit_code(interrupted: SystemExit) -> int:
+    return interrupted.code if isinstance(interrupted.code, int) else 1
+
+
+def snapshot(cfg: Config, existing: list[str]) -> tuple[int, dict]:
+    """Quiesce running state-owning containers, run restic backup, always restart them."""
+    cfg.state_dir.mkdir(parents=True, exist_ok=True)
+    cfg.canary.write_text(f"{datetime.now(timezone.utc).isoformat()} {secrets.token_hex(8)}\n")
+    with tempfile.NamedTemporaryFile("w", dir=cfg.state_dir, prefix="paths.",
+                                     delete=False) as files_from:
+        files_from.write("".join(f"{path}\n" for path in existing))
+    stopped: list[str] = []
+    code, summary = 1, {}
+    try:
+        stopped = running_containers(cfg.quiesce)
+        if stopped:
+            log(f"stopping {' '.join(stopped)}")
+            docker("stop", "--time", str(STOP_TIMEOUT_SECONDS), *stopped)
+        result = restic(cfg, "backup", "--files-from", files_from.name,
+                        "--exclude-file", str(cfg.directory / "excludes"),
+                        "--tag", "nightly", "--json", str(cfg.canary), capture=True)
+        code, summary = result.returncode, restic_summary(result.stdout)
+    finally:
+        Path(files_from.name).unlink(missing_ok=True)
+        if stopped:
+            log(f"starting {' '.join(stopped)}")
+            if docker("start", *stopped).returncode != 0:
+                log("error: failed to restart some containers")
+                code = code or 1
+    return code, summary
+
+
+def record_success(cfg: Config, snapshot_id: str) -> None:
+    """Remember which snapshot holds which canary, so the check verifies a known-good one."""
+    reference = cfg.state_dir / LAST_SUCCESS_FILE
+    temporary = reference.with_suffix(".tmp")
+    temporary.write_text(json.dumps(
+        {"snapshot_id": snapshot_id, "canary": cfg.canary.read_text().strip()}))
+    os.replace(temporary, reference)
+
+
+def run_backup(cfg: Config) -> int:
+    metrics_path = cfg.textfile_dir / BACKUP_METRICS
+    existing = [path for path in cfg.paths if os.path.exists(path)]
+    missing = [path for path in cfg.paths if path not in existing]
+    for path in missing:
+        log(f"warning: backup path does not exist, skipping: {path}")
+    code, summary = 1, {}
+    try:
+        code = ensure_repository(cfg)
+        if code == 0:
+            code, summary = snapshot(cfg, existing)
+            if code != 0:
+                log(f"restic backup failed with exit code {code}")
+        if code == 0:
+            record_success(cfg, summary.get("snapshot_id", "latest"))
+            code = restic(cfg, "forget", "--prune",
+                          "--keep-daily", cfg.settings["KEEP_DAILY"],
+                          "--keep-weekly", cfg.settings["KEEP_WEEKLY"],
+                          "--keep-monthly", cfg.settings["KEEP_MONTHLY"],
+                          "--tag", "nightly").returncode
+        return code
+    except SystemExit as interrupted:
+        code = exit_code(interrupted)
+        raise
+    except Exception as error:
+        log(f"error: backup aborted: {error!r}")
+        code = 1
+        return code
+    finally:
+        write_metrics(metrics_path, {
+            LAST_SUCCESS: time.time() if code == 0 else read_previous(metrics_path, LAST_SUCCESS),
+            "home_server_backup_last_exit_code": code,
+            "home_server_backup_bytes_added": float(summary.get("data_added", 0)),
+            "home_server_backup_missing_paths": len(missing),
+        })
+
+
+def run_check(cfg: Config) -> int:
+    metrics_path = cfg.textfile_dir / CHECK_METRICS
+    code = 1
+    try:
+        reference_path = cfg.state_dir / LAST_SUCCESS_FILE
+        if not reference_path.exists():
+            log("error: no successful backup recorded yet")
+            code = CANARY_MISMATCH
+            return code
+        reference = json.loads(reference_path.read_text())
+        subset = cfg.settings["CHECK_READ_DATA_SUBSET"]
+        code = restic(cfg, "check", f"--read-data-subset={subset}").returncode
+        if code == 0:
+            dumped = restic(cfg, "dump", reference["snapshot_id"], str(cfg.canary), capture=True)
+            code = dumped.returncode
+            if code == 0 and dumped.stdout.strip() != reference["canary"]:
+                log("error: restored canary does not match the recorded canary")
+                code = CANARY_MISMATCH
+        return code
+    except SystemExit as interrupted:
+        code = exit_code(interrupted)
+        raise
+    except Exception as error:
+        log(f"error: check aborted: {error!r}")
+        code = 1
+        return code
+    finally:
+        write_metrics(metrics_path, {
+            CHECK_LAST_SUCCESS: time.time() if code == 0
+            else read_previous(metrics_path, CHECK_LAST_SUCCESS),
+            "home_server_backup_check_last_exit_code": code,
+        })
+
+
+def terminate(signum: int, _frame) -> None:
+    raise SystemExit(128 + signum)
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) != 1 or argv[0] not in ("backup", "check"):
+        print("usage: home-server-backup {backup|check}", file=sys.stderr)
+        return 2
+    signal.signal(signal.SIGTERM, terminate)
+    signal.signal(signal.SIGINT, terminate)
+    cfg = load_config()
+    return run_backup(cfg) if argv[0] == "backup" else run_check(cfg)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,11 @@
+# Managed by Ansible — roles/backup
+[Unit]
+Description=Nightly home-server backup
+
+[Timer]
+OnCalendar={{ backup_schedule }}
+Persistent=true
+RandomizedDelaySec={{ backup_randomized_delay }}
+
+[Install]
+WantedBy=timers.target

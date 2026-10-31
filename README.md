@@ -9,6 +9,9 @@ one GitHub Actions run. See [`ansible/README.md`](ansible/README.md) for full se
 - **Step 1 — bootstrap (laptop, LAN, one-time per reinstall):** `ansible/bootstrap/playbooks/tailscale.yml`
 - **Step 2 — full configure (GitHub Actions "Ansible Configure" workflow):** `ansible/github/playbooks/site.yml`
 
+App state (Home Assistant, Zigbee2MQTT, qBittorrent, Plex, Jellyfin, Grafana, …) is backed up
+nightly to S3 with restic; media is not. See [Backups](ansible/README.md#backups).
+
 ## Environments
 
 The `chris` environment uses the existing media and smart-home stack in

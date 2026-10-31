@@ -134,6 +134,8 @@ services:
       - TZ=${TIMEZONE}
     command:
       - '--path.rootfs=/host'
+      # Backup status written by roles/backup (home-server-backup)
+      - '--collector.textfile.directory=/host/var/lib/node-exporter/textfile'
     restart: unless-stopped
     cap_drop:
       - ALL
