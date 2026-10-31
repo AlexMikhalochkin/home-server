@@ -471,7 +471,7 @@ App state is backed up nightly with [restic](https://restic.net/) to S3 by the `
 
 ### One-time S3 setup
 
-1. Create a private bucket `alex-home-servers-backups` in `eu-central-1` with *Block all public
+1. Create a private bucket `momomo-home-servers-backups` in `eu-central-1` with *Block all public
    access* and default encryption (SSE-S3) enabled.
 2. Create an IAM user for backups only, with this policy and an access key:
 
@@ -482,12 +482,12 @@ App state is backed up nightly with [restic](https://restic.net/) to S3 by the `
        {
          "Effect": "Allow",
          "Action": "s3:ListBucket",
-         "Resource": "arn:aws:s3:::alex-home-servers-backups"
+         "Resource": "arn:aws:s3:::momomo-home-servers-backups"
        },
        {
          "Effect": "Allow",
          "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-         "Resource": "arn:aws:s3:::alex-home-servers-backups/*"
+         "Resource": "arn:aws:s3:::momomo-home-servers-backups/*"
        }
      ]
    }

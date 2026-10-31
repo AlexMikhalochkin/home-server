@@ -102,7 +102,7 @@ stack_env:
 # Paths are where state lives today; they move to /srv/appdata in Part 2 of
 # docs/superpowers/specs/2026-10-30-app-state-and-backups-design.md.
 backup_enabled: true
-backup_restic_repository: s3:s3.eu-central-1.amazonaws.com/alex-home-servers-backups/chris
+backup_restic_repository: s3:s3.eu-central-1.amazonaws.com/momomo-home-servers-backups/chris
 backup_paths:
   - "{{ stack_env.HOME_ASSISTANT_CONFIGURATION_DIRECTORY }}"
   # Still bind-mounted from the configuration checkout and edited by the apps' UIs.

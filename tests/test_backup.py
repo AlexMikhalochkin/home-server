@@ -453,7 +453,7 @@ class ChrisBackupConfigTests(unittest.TestCase):
         variables = self.host_vars()
         self.assertIs(variables["backup_enabled"], True)
         self.assertEqual(variables["backup_restic_repository"],
-                         "s3:s3.eu-central-1.amazonaws.com/alex-home-servers-backups/chris")
+                         "s3:s3.eu-central-1.amazonaws.com/momomo-home-servers-backups/chris")
         self.assertEqual(variables["backup_paths"], [
             "/opt/github-deploy/homeassistant/config",
             "/opt/github-deploy/home-server-configuration/home-assistant",

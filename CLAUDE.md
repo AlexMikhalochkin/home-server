@@ -80,7 +80,7 @@ Services are grouped by profile to control which run on a given host:
 - **Storage is declarative and multi-disk** (`storage` role) — each optional disk uses a stable UUID/by-id source and an explicit mount point; services consume named paths from the environment-specific host vars. Disks are never reformatted unless an entry explicitly sets `format: true` and no filesystem exists.
 - **Grafana anonymous admin access** — intentional, LAN-only.
 - **Backups cover app state only** (`backup` role, full configure only) — restic → S3
-  (`alex-home-servers-backups`, eu-central-1) nightly at 04:00 with a brief stop of
+  (`momomo-home-servers-backups`, eu-central-1) nightly at 04:00 with a brief stop of
   state-owning containers. Media, caches and logs are never backed up. Secrets live in
   `ansible/vault/secrets.yml`; see `ansible/README.md` "Backups".
 - **Shared media identity** — Chris provisions a non-login `media` account/group with
