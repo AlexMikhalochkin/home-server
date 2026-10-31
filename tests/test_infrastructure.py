@@ -400,6 +400,14 @@ class InfrastructureTests(unittest.TestCase):
                 {key: camera.get(key, config.get(key)) for key in expected}, expected
             )
 
+    def test_home_assistant_ui_editable_files_live_in_its_config_volume(self):
+        # HA saves UI edits by renaming a temp file over the target; that fails
+        # with EBUSY when the target is a single-file bind mount.
+        volumes = load("docker-compose.yaml")["services"]["home-assistant"]["volumes"]
+        targets = {volume.split(":")[1] for volume in volumes}
+        for name in ("automations.yaml", "scripts.yaml", "scenes.yaml"):
+            self.assertNotIn(f"/config/{name}", targets)
+
     def test_security_scan_includes_both_compose_files(self):
         workflow = load(".github/workflows/lint-docker.yaml")
         step = next(

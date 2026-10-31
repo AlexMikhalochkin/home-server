@@ -60,8 +60,6 @@ services:
       - ${HOME_ASSISTANT_CONFIGURATION_DIRECTORY}:/config
       - ../home-server-configuration/home-assistant/configuration.yaml:/config/configuration.yaml
       - ../home-server-configuration/home-assistant/dashboards:/config/dashboards:ro
-      - ../home-server-configuration/home-assistant/scripts.yaml:/config/scripts.yaml
-      - ../home-server-configuration/home-assistant/scenes.yaml:/config/scenes.yaml
     environment:
       - TZ=${TIMEZONE}
     network_mode: "service:openvpn"
